@@ -1,8 +1,11 @@
 # ARTEL — Masters Knowledge Base
 
+[![Завантажуйте застосунок ARTEL для Windows](media/arte-poster-v1.jpg)](https://tv-firmware.duckdns.org/download/)
+
 [ARTEL](https://tv-firmware.duckdns.org) — облачная база прошивок, дампов и
 ремонтной документации для мастеров по ремонту электроники. Этот репозиторий —
 **десктоп-клиент ARTEL** для Windows 7/8+ (Electron 22 + Rust sidecar).
+**[⬇️ Завантажити застосунок](https://tv-firmware.duckdns.org/download/)**
 
 Клиент входит в программу ARTEL для мастеров: общий каталог прошивок,
 личное хранилище, чаты сообщества, вкладки инструментов и FAQ.
