@@ -1,6 +1,6 @@
 # ARTEL — Masters Knowledge Base
 
-[![Завантажуйте застосунок ARTEL для Windows](media/arte-poster-v1.jpg)](https://tv-firmware.duckdns.org/download/)
+<p><a href="https://tv-firmware.duckdns.org/download/"><img src="media/arte-poster-v1.jpg" alt="Завантажуйте застосунок ARTEL для Windows"></a></p>
 
 [ARTEL](https://tv-firmware.duckdns.org) — облачная база прошивок, дампов и
 ремонтной документации для мастеров по ремонту электроники. Этот репозиторий —
