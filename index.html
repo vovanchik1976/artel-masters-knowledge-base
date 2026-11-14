@@ -1,0 +1,3297 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- CSP отключён — tauri.conf.json уже имеет "csp": null,
+       а в Tauri v2 production режиме origin (tauri://localhost)
+       не совпадает с 'self' для HTTP-запросов.
+       CSP из HTML только мешает. -->
+  <title>ARTEL — Masters Knowledge Base</title>
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    :root {
+      /* ── Пресет оформления по умолчанию: ARTEL Glass (тёмное «стекло») ──
+         Тема = ПРЕСЕТ, а не цвет: каждый пресет ниже обязан задать ВЕСЬ набор
+         (цвета + форма + глубина + шрифты). Гейт: tests/theme-presets.test.ts
+         (T3 — полнота набора, T4 — структурные отличия, T2 — нет зашитого акцента). */
+      --bg: #121622;
+      --bg-image: radial-gradient(circle at 50% 0%, #1a2035 0%, #121622 100%);
+      --surface: #1e2536;
+      --surface2: #273045;
+      --surface-deep: #1a1a2e;
+      --glass: rgba(30, 37, 54, 0.7);
+      --glass-border: rgba(var(--ov-rgb), 0.08);
+      --header-bg: rgba(18, 22, 34, 0.8);
+      --tabs-bg: rgba(30, 37, 54, 0.4);
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --accent: #5dade2;
+      --accent2: #2e86c1;
+      /* Единственный источник акцента для прозрачных оттенков:
+         rgba(var(--accent-rgb), 0.2) вместо зашитых цифр (D-141). */
+      --accent-rgb: 93, 173, 226;
+      --accent2-rgb: 46, 134, 193;
+      /* «Подсветка» поверх панелей: в тёмных пресетах белая, в светлых — чёрная. */
+      --ov-rgb: 255, 255, 255;
+      --success: #10b981;
+      --error: #ef4444;
+      --error-rgb: 239, 68, 68;
+      --warning: #f59e0b;
+      --community-author-color: var(--accent);
+      /* форма */
+      --r-card: 16px;
+      --r-tab: 12px;
+      --r-btn: 12px;
+      --r-input: 10px;
+      --r-badge: 8px;
+      --tab-frame-r: 16px;
+      /* глубина */
+      --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.2);
+      --blur-card: blur(16px);
+      --blur-bar: blur(12px);
+      /* шрифты и «характер» подписей (это и делает стили разными) */
+      --font-ui: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-head: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Consolas', 'Courier New', monospace;
+      --tab-case: uppercase;
+      --tab-ls: 0.3px;
+      /* активная вкладка и главная кнопка */
+      --tab-active-bg: rgba(var(--accent-rgb), 0.1);
+      --tab-active-line: rgba(var(--accent-rgb), 0.2);
+      --tab-active-shadow: inset 0 0 20px rgba(var(--accent-rgb), 0.05);
+      --btn-primary-bg: linear-gradient(135deg, rgba(var(--accent-rgb), 0.2), rgba(var(--accent2-rgb), 0.2));
+      --btn-primary-fg: var(--accent);
+      --btn-primary-line: rgba(var(--accent-rgb), 0.3);
+      /* «сплошной» акцент: заливка главных кнопок и бейджей (замена зашитому #1a5276) */
+      --solid-a: #2e86c1;
+      --solid-b: #1a5276;
+      --solid-a-hover: #3498db;
+      --solid-fg: #ffffff;
+    }
+
+    /* ─── Пресеты оформления ───
+       Выбор — в Настройках; хранится в localStorage (fw_theme) и применяется
+       атрибутом data-theme на <html>. `artel` — базовый вид (:root, атрибут не ставится).
+       Старые «цветовые» значения (forest/violet/amber) мягко уводятся в artel
+       модулем src/ui/ThemePresets.ts. */
+
+    /* 2 · Майстерня — светлый «сервис-мануал»: папір, лінійки, шрифт із зарубками. */
+    [data-theme="paper"] {
+      --bg: #f1ebdd;
+      --bg-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.025) 0 1px, transparent 1px 28px), #f1ebdd;
+      --surface: #fffdf6;
+      --surface2: #f3eee0;
+      --surface-deep: #ece4d3;
+      --glass: #fffdf6;
+      --glass-border: #d8cfb9;
+      --header-bg: #fffdf6;
+      --tabs-bg: transparent;
+      --text: #221e18;
+      --text-dim: #6e6551;
+      --accent: #a8451a;
+      --accent2: #8f3a12;
+      --accent-rgb: 168, 69, 26;
+      --accent2-rgb: 143, 58, 18;
+      --ov-rgb: 0, 0, 0;
+      --success: #2f6f4f;
+      --r-card: 6px;
+      --r-tab: 0px;
+      --r-btn: 5px;
+      --r-input: 5px;
+      --r-badge: 3px;
+      --tab-frame-r: 0px;
+      --shadow-card: none;
+      --blur-card: none;
+      --blur-bar: none;
+      --font-head: Georgia, 'Times New Roman', serif;
+      --font-mono: 'Consolas', 'Courier New', monospace;
+      --tab-case: uppercase;
+      --tab-ls: 0.8px;
+      --tab-active-bg: #fffdf6;
+      --tab-active-line: transparent;
+      --tab-active-shadow: none;
+      --btn-primary-bg: #8f3a12;
+      --btn-primary-fg: #fff8ec;
+      --btn-primary-line: #6f2a0b;
+      --solid-a: #8f3a12;
+      --solid-b: #6f2a0b;
+      --solid-a-hover: #a8451a;
+      --solid-fg: #fff8ec;
+    }
+
+    /* 3 · Photon — нативное окно ОС: сірі панелі, сегментовані вкладки, скло-кнопки. */
+    [data-theme="photon"] {
+      --bg: #ececec;
+      --bg-image: linear-gradient(#f4f4f4, #e6e6e6);
+      --surface: #f7f7f7;
+      --surface2: #ececec;
+      --surface-deep: #e2e2e2;
+      --glass: #f7f7f7;
+      --glass-border: #c9c9c9;
+      --header-bg: linear-gradient(#fbfbfb, #e9e9e9);
+      --tabs-bg: #e4e4e4;
+      --text: #1d1d1f;
+      --text-dim: #6e6e73;
+      --accent: #0a84ff;
+      --accent2: #0060df;
+      --accent-rgb: 10, 132, 255;
+      --accent2-rgb: 0, 96, 223;
+      --ov-rgb: 0, 0, 0;
+      --success: #1f9d55;
+      --r-card: 8px;
+      --r-tab: 6px;
+      --r-btn: 6px;
+      --r-input: 6px;
+      --r-badge: 5px;
+      --tab-frame-r: 8px;
+      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.07);
+      --blur-card: none;
+      --blur-bar: none;
+      --font-head: 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'Consolas', 'Courier New', monospace;
+      --tab-case: none;
+      --tab-ls: 0px;
+      --tab-active-bg: linear-gradient(#ffffff, #f2f2f2);
+      --tab-active-line: #b0b0b0;
+      --tab-active-shadow: 0 1px 1px rgba(0, 0, 0, 0.09);
+      --btn-primary-bg: linear-gradient(#3395ff, #0a7bef);
+      --btn-primary-fg: #ffffff;
+      --btn-primary-line: #0a6cd0;
+      --solid-a: #0a7bef;
+      --solid-b: #0a6cd0;
+      --solid-a-hover: #3395ff;
+      --solid-fg: #ffffff;
+    }
+
+    /* 4 · HUD — тёмный технический пульт: моно-шрифт, неон, нуль радіусів, дужки. */
+    [data-theme="hud"] {
+      --bg: #04070a;
+      --bg-image: repeating-linear-gradient(0deg, rgba(0, 229, 168, 0.03) 0 1px, transparent 1px 3px), #04070a;
+      --surface: #080f14;
+      --surface2: #0c1a20;
+      --surface-deep: #050b0f;
+      --glass: #080f14;
+      --glass-border: #16323b;
+      --header-bg: #050b0f;
+      --tabs-bg: #050b0f;
+      --text: #cfe9e4;
+      --text-dim: #5f8b86;
+      --accent: #00e5a8;
+      --accent2: #00b386;
+      --accent-rgb: 0, 229, 168;
+      --accent2-rgb: 0, 179, 134;
+      --ov-rgb: 255, 255, 255;
+      --success: #00e5a8;
+      --r-card: 2px;
+      --r-tab: 2px;
+      --r-btn: 2px;
+      --r-input: 2px;
+      --r-badge: 0px;
+      --tab-frame-r: 2px;
+      --shadow-card: none;
+      --blur-card: none;
+      --blur-bar: none;
+      --font-ui: 'Consolas', 'Courier New', monospace;
+      --font-head: 'Consolas', 'Courier New', monospace;
+      --font-mono: 'Consolas', 'Courier New', monospace;
+      --tab-case: uppercase;
+      --tab-ls: 1.2px;
+      --tab-active-bg: rgba(var(--accent-rgb), 0.07);
+      --tab-active-line: var(--accent);
+      --tab-active-shadow: inset 0 0 16px rgba(var(--accent-rgb), 0.12);
+      --btn-primary-bg: rgba(var(--accent-rgb), 0.12);
+      --btn-primary-fg: var(--accent);
+      --btn-primary-line: var(--accent);
+      --solid-a: #00b386;
+      --solid-b: #00795c;
+      --solid-a-hover: #00e5a8;
+      --solid-fg: #04070a;
+    }
+
+    /* Шрифты (и весь UI) крупнее на 15% — стандартный zoom браузера.
+       Применён на корне, чтобы 100vh соответствовал видимой области. */
+    html {
+      zoom: 1.15;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Глобальный копипаст (2026-09-24): весь текст selectable —
+       поля, логи, диаг-блоки, ошибки. Без этого ПКМ «Копировать»
+       нечего выделять в части статичных блоков. */
+    body, p, div, span, pre, code, td, th, li, a {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    input, textarea { -webkit-user-select: text; user-select: text; }
+    button, .btn { -webkit-user-select: none; user-select: none; }
+    pre, code, .log, [class*="log"], [class*="diag"] {
+      white-space: pre-wrap;
+      word-break: break-word;
+      cursor: text;
+    }
+    body {
+      font-family: var(--font-ui);
+      background: var(--bg-image);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    .header {
+      background: var(--header-bg);
+      backdrop-filter: var(--blur-bar);
+      -webkit-backdrop-filter: var(--blur-bar);
+      padding: 12px 32px;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    /* Логотип шапки: ассет 128px рисуется на 42px (как у прежнего знака-иконки),
+       скруглённые углы уже «запечены» в альфу PNG — CSS-обрезка не нужна. */
+    .logo-container .logo-mark {
+      width: 42px;
+      height: 42px;
+      display: block;
+      flex: 0 0 auto;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .logo-container .logo-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+    .logo-container .logo-title {
+      font-size: 20px;
+      font-weight: 700;
+      font-family: var(--font-head);
+      color: var(--accent);
+      letter-spacing: 1.5px;
+    }
+    .logo-container .logo-subtitle {
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    @media (max-width: 1100px) {
+      .logo-container .logo-subtitle { font-size: 8px; }
+    }
+    .header-status {
+      font-size: 13px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--surface);
+      border-radius: 20px;
+      border: 1px solid var(--glass-border);
+      color: var(--text);
+    }
+    .user-pill .avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .points-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+      border-radius: 20px;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fcd34d;
+      font-weight: 600;
+    }
+    .header-status .btn-logout {
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--glass-border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+    .header-status .btn-logout:hover {
+      background: rgba(var(--ov-rgb), 0.05);
+      color: var(--text);
+      border-color: rgba(var(--ov-rgb), 0.2);
+    }
+    .version-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: var(--surface);
+      border-radius: 20px;
+      border: 1px solid var(--glass-border);
+      color: var(--text-dim);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .version-pill svg {
+      width: 12px; height: 12px;
+    }
+    .update-progress {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 200px;
+    }
+    .update-progress-bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(var(--ov-rgb), 0.08);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .update-progress-bar::before {
+      content: "";
+      display: block;
+      height: 100%;
+      width: var(--progress, 0%);
+      background: #4c8dff;
+      transition: width 0.2s ease;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      display: inline-block;
+    }
+    .status-dot.connected { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .status-dot.disconnected { background: var(--error); box-shadow: 0 0 8px var(--error); }
+
+    /* Language switcher */
+    .lang-switcher {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .lang-btn {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--glass-border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+      line-height: 1.4;
+    }
+    .lang-btn:hover {
+      color: var(--text);
+      border-color: rgba(var(--ov-rgb), 0.2);
+    }
+    .lang-btn.active {
+      background: rgba(var(--accent-rgb), 0.15);
+      color: var(--accent);
+      border-color: rgba(var(--accent-rgb), 0.3);
+    }
+
+    /* Личное хранилище: глобальный переключатель + баннер режима */
+    .vault-toggle {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .vault-toggle:hover {
+      background: rgba(16, 185, 129, 0.2);
+    }
+    .vault-toggle.vault-mode-active {
+      background: rgba(16, 185, 129, 0.22);
+      border-color: rgba(16, 185, 129, 0.6);
+    }
+    /* SP-33/D-180: входящие передачи — компактная кнопка в шапке + поповер.
+       Раньше блок занимал всю ширину под шапкой; при нескольких файлах это
+       «съедало» пол-экрана. Пульсирующая точка видна сразу, даже когда
+       панель закрыта. Все цвета — токены темы (D-141). */
+    .share-inbox {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    /* `hidden` важнее display: иначе кнопка «📨 0» висела бы у всех. */
+    .share-inbox[hidden] { display: none; }
+    .share-inbox-toggle {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(var(--accent-rgb), 0.45);
+      background: rgba(var(--accent-rgb), 0.12);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .share-inbox-toggle:hover,
+    .share-inbox.is-open .share-inbox-toggle {
+      background: rgba(var(--accent-rgb), 0.22);
+      border-color: rgba(var(--accent-rgb), 0.7);
+    }
+    .share-inbox-icon { font-size: 14px; line-height: 1; }
+    .share-inbox-count {
+      min-width: 17px;
+      height: 17px;
+      padding: 0 4px;
+      border-radius: 9px;
+      background: var(--accent);
+      color: var(--bg);
+      font-size: 11px;
+      line-height: 17px;
+      text-align: center;
+    }
+    /* Мигающая точка: единственный сигнал «есть непрочитанные входящие». */
+    .share-inbox-pulse {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--error);
+      animation: share-inbox-pulse 1.6s ease-out infinite;
+    }
+    @keyframes share-inbox-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(var(--error-rgb), 0.6); }
+      70% { box-shadow: 0 0 0 9px rgba(var(--error-rgb), 0); }
+      100% { box-shadow: 0 0 0 0 rgba(var(--error-rgb), 0); }
+    }
+    .share-inbox-panel {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      z-index: 300;
+      width: min(380px, calc(100vw - 40px));
+      max-height: min(60vh, 480px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--r-card);
+      background: var(--glass);
+      box-shadow: var(--shadow-card);
+      backdrop-filter: var(--blur-card);
+      -webkit-backdrop-filter: var(--blur-card);
+    }
+    .share-inbox-panel[hidden] { display: none; }
+    .share-inbox-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .share-inbox-panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .share-inbox-close {
+      border: 0;
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 4px 6px;
+      border-radius: 6px;
+    }
+    .share-inbox-close:hover {
+      color: var(--text);
+      background: rgba(var(--ov-rgb), 0.08);
+    }
+    /* Список: при нескольких входящих прокручивается, шапка и подсказка стоят. */
+    .share-inbox-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+    .share-inbox-list::-webkit-scrollbar { width: 6px; }
+    .share-inbox-list::-webkit-scrollbar-thumb {
+      background: rgba(var(--accent-rgb), 0.35);
+      border-radius: 3px;
+    }
+    .share-inbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--glass-border);
+      border-radius: calc(var(--r-card) - 2px);
+      background: var(--surface2);
+    }
+    .share-inbox-item.is-busy { opacity: 0.6; }
+    /* Мигающая метка в каждой строке — «файл ждёт решения». */
+    .share-inbox-dot {
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: share-inbox-dot 1.4s ease-in-out infinite;
+    }
+    @keyframes share-inbox-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.8); }
+    }
+    .share-inbox-text {
+      min-width: 0;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .share-inbox-file {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .share-inbox-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .share-inbox-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 0 0 auto;
+    }
+    .share-inbox-actions .btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      line-height: 1.3;
+      border-radius: var(--r-btn);
+    }
+    .share-inbox-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .share-inbox-pulse,
+      .share-inbox-dot {
+        animation: none;
+      }
+      .share-inbox-dot { opacity: 0.8; }
+    }
+
+    /* ─── Диалог «Надіслати другові»: только токены темы (без инлайн-стилей) ── */
+    .vault-share-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: var(--blur-bar);
+    }
+    .vault-share-dialog {
+      width: min(480px, 100%);
+      max-height: min(82vh, 660px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 20px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--r-card);
+      box-shadow: var(--shadow-card);
+      backdrop-filter: var(--blur-card);
+      color: var(--text);
+      font-family: var(--font-ui);
+    }
+    .vault-share-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .vault-share-title {
+      font-family: var(--font-head);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .vault-share-close {
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      border-radius: var(--r-btn);
+      border: 1px solid var(--glass-border);
+      background: rgba(var(--ov-rgb), 0.04);
+      color: var(--text-dim);
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .vault-share-close:hover,
+    .vault-share-close:focus-visible {
+      color: var(--text);
+      border-color: rgba(var(--accent-rgb), 0.45);
+    }
+    .vault-share-file {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 8px 10px;
+      border-radius: var(--r-input);
+      border: 1px solid var(--glass-border);
+      background: var(--surface2);
+      font-size: 12px;
+    }
+    .vault-share-file-name {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      font-weight: 600;
+    }
+    .vault-share-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(var(--accent-rgb), 0.35);
+      background: rgba(var(--accent-rgb), 0.12);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .vault-share-note {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-dim);
+    }
+    .vault-share-search {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 12px;
+      border-radius: var(--r-input);
+      border: 1px solid var(--glass-border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    .vault-share-search::placeholder { color: var(--text-dim); }
+    .vault-share-search:focus {
+      border-color: rgba(var(--accent-rgb), 0.55);
+      box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15);
+    }
+    .vault-share-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      min-height: 64px;
+    }
+    .vault-share-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--r-input);
+      background: rgba(var(--ov-rgb), 0.02);
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .vault-share-user:hover:not(:disabled),
+    .vault-share-user:focus-visible {
+      border-color: rgba(var(--accent-rgb), 0.5);
+      background: rgba(var(--accent-rgb), 0.08);
+      outline: none;
+    }
+    .vault-share-user:disabled { opacity: 0.55; cursor: progress; }
+    .vault-share-avatar {
+      flex: 0 0 34px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 1px solid rgba(var(--accent-rgb), 0.3);
+      background: rgba(var(--accent-rgb), 0.15);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      user-select: none;
+    }
+    .vault-share-user-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .vault-share-user-name {
+      font-size: 13px;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .vault-share-user-nick {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .vault-share-user .vault-share-badge {
+      padding: 1px 6px;
+      font-size: 12px;
+    }
+    .vault-share-state {
+      padding: 14px 6px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .vault-share-state.error { color: var(--error); }
+    @media (max-width: 520px) {
+      .vault-share-overlay { padding: 10px; }
+      .vault-share-dialog { padding: 14px; gap: 8px; }
+      .vault-share-title { font-size: 15px; }
+    }
+    .vault-banner {
+      display: none;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      border-bottom: 1px solid var(--glass-border);
+      position: sticky;
+      top: 52px;
+      z-index: 99;
+    }
+    .vault-banner.vault-mode-active {
+      display: block;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    /* Публичное поле: подсветка-подсказка (нейтральный/синий тон) */
+    .vault-banner.vault-mode-public {
+      display: block;
+      background: rgba(59, 130, 246, 0.10);
+      color: #93c5fd;
+      border-color: rgba(59, 130, 246, 0.25);
+    }
+    .vault-banner.vault-mode-public.clickable {
+      cursor: pointer;
+    }
+    .vault-banner.vault-mode-public.clickable:hover {
+      background: rgba(59, 130, 246, 0.16);
+    }
+
+    /* Main layout: контент использует ШИРИНУ ОКНА, а не центрированную
+       колонку 840px (запрос владельца 2026-11-01: «вкладки занимают середину
+       пространства»). Верхняя граница нужна только для очень широких
+       мониторов, чтобы строки форм не растягивались на 2 метра; боковые
+       отступы текучие. Гейт: tests/tabs-overflow.test.ts (T1). */
+    .main {
+      flex: 1;
+      padding: 28px clamp(16px, 2vw, 40px);
+      max-width: 1680px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Card */
+    .card {
+      background: var(--glass);
+      backdrop-filter: var(--blur-card);
+      -webkit-backdrop-filter: var(--blur-card);
+      border-radius: var(--r-card);
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-card);
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font-head);
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Спойлер функционала тулзы (D-167): название+описание видимы, функциональная
+       секция свёрнута. Паттерн для новых тулз — <details class="tool-spoiler">. */
+    .tool-spoiler {
+      margin-top: 14px;
+      background: var(--glass);
+      backdrop-filter: var(--blur-card);
+      -webkit-backdrop-filter: var(--blur-card);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--r-card);
+      box-shadow: var(--shadow-card);
+    }
+    .tool-spoiler summary {
+      cursor: pointer;
+      padding: 16px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font-head);
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .tool-spoiler summary::-webkit-details-marker { display: none; }
+    .tool-spoiler summary::before {
+      content: "▸";
+      color: var(--accent);
+      transition: transform 0.15s ease;
+    }
+    .tool-spoiler[open] summary::before { transform: rotate(90deg); }
+    .tool-spoiler[open] summary { border-bottom: 1px solid var(--glass-border); }
+    .tool-spoiler .tool-spoiler-body { padding: 4px 24px 20px; }
+
+    /* Тулзы (D-169): тулза = самодостаточный блок «тайл → рабочая область».
+       Клик по тайлу (3D-иконка намекает «нажми») раскрывает функционал со
+       своими спойлерами. Открыта максимум ОДНА тулза (аккордеон), поэтому
+       даже после добавления новых тулз блоки никогда не перекрываются. */
+    .tool-entry {
+      background: var(--glass);
+      backdrop-filter: var(--blur-card);
+      -webkit-backdrop-filter: var(--blur-card);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--r-card);
+      box-shadow: var(--shadow-card);
+      margin-top: 14px;
+      overflow: hidden; /* радиусы держатся и при раскрытой рабочей области */
+    }
+    .tool-tile {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      text-align: left;
+      padding: 18px 20px;
+      background: none;
+      border: none;
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .tool-tile:hover { background: rgba(var(--ov-rgb), 0.05); }
+    .tool-tile:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 2px rgba(var(--accent-rgb), 0.55);
+    }
+    .tool-tile-icon {
+      width: 76px;
+      height: 76px;
+      object-fit: contain;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.45));
+      transition: transform 0.18s ease, filter 0.18s ease;
+    }
+    /* Иконка «намекает — нажми на меня»: подъём + подсветка акцентом темы. */
+    .tool-tile:hover .tool-tile-icon,
+    .tool-tile:focus-visible .tool-tile-icon {
+      transform: translateY(-2px) scale(1.06);
+      filter: drop-shadow(0 10px 22px rgba(0,0,0,0.5))
+        drop-shadow(0 0 14px rgba(var(--accent-rgb), 0.35));
+    }
+    .tool-tile[aria-expanded="true"] .tool-tile-icon { transform: scale(1.04); }
+    .tool-tile-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0; /* длинное описание переносится, а не растягивает тайл */
+    }
+    .tool-tile-name {
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font-head);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .tool-tile-desc {
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-dim);
+      overflow-wrap: anywhere;
+    }
+    .tool-tile-chevron {
+      margin-left: auto;
+      flex: 0 0 auto;
+      color: var(--accent);
+      font-size: 14px;
+      transition: transform 0.18s ease;
+    }
+    .tool-tile[aria-expanded="true"] .tool-tile-chevron { transform: rotate(180deg); }
+    .tool-workspace {
+      padding: 4px 20px 20px;
+      border-top: 1px solid var(--glass-border);
+    }
+    @keyframes toolReveal {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: none; }
+    }
+    .tool-workspace:not([hidden]) { animation: toolReveal 0.18s ease; }
+    .tool-rules {
+      margin: 12px 0 4px;
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: var(--text-dim);
+      overflow-wrap: anywhere;
+    }
+    .tool-rules > div { margin-bottom: 2px; }
+    /* Спойлер внутри рабочей области — лёгкая «впадина» без двойного стекла. */
+    .tool-workspace .tool-spoiler {
+      background: rgba(0, 0, 0, 0.16);
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: var(--r-btn);
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+    .btn-primary {
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-fg);
+      border: 1px solid var(--btn-primary-line);
+    }
+    .btn-primary:hover:not(:disabled) { 
+      background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.3), rgba(var(--accent2-rgb), 0.3));
+      border-color: rgba(var(--accent-rgb), 0.5);
+      box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15);
+    }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--glass-border);
+    }
+    .btn-secondary:hover:not(:disabled) { 
+      background: rgba(var(--ov-rgb), 0.05);
+      border-color: rgba(var(--ov-rgb), 0.2); 
+    }
+    .btn-danger { 
+      background: rgba(239, 68, 68, 0.15); 
+      color: var(--error); 
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .btn-danger:hover:not(:disabled) { 
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    /* Upload action buttons (file + folder pickers) */
+    .btn-upload-file,
+    .btn-upload-folder {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 10px 18px;
+      border-radius: 14px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-upload-file .btn-icon-3d,
+    .btn-upload-folder .btn-icon-3d {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      flex-shrink: 0;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-upload-file:hover .btn-icon-3d,
+    .btn-upload-folder:hover .btn-icon-3d {
+      transform: scale(1.08) translateY(-2px);
+    }
+    .btn-upload-file {
+      background: linear-gradient(135deg, var(--solid-a), var(--solid-b));
+      color: var(--solid-fg);
+      border: 1px solid rgba(var(--accent-rgb), 0.4);
+      box-shadow: 0 4px 16px rgba(var(--accent2-rgb), 0.25);
+    }
+    .btn-upload-file:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--solid-a-hover), var(--solid-a));
+      border-color: rgba(var(--accent-rgb), 0.7);
+      box-shadow: 0 6px 24px rgba(var(--accent2-rgb), 0.35);
+    }
+    .btn-upload-file:active:not(:disabled) {
+      box-shadow: 0 2px 8px rgba(var(--accent2-rgb), 0.2);
+    }
+    .btn-upload-folder {
+      background: transparent;
+      color: var(--accent);
+      border: 2px solid rgba(var(--accent-rgb), 0.35);
+    }
+    .btn-upload-folder:hover:not(:disabled) {
+      background: rgba(var(--accent-rgb), 0.08);
+      border-color: rgba(var(--accent-rgb), 0.6);
+      box-shadow: 0 4px 16px rgba(var(--accent2-rgb), 0.12);
+    }
+    .btn-upload-folder:active:not(:disabled) {
+      background: rgba(var(--accent-rgb), 0.12);
+    }
+
+    /* Drag & Drop: подсветка кнопки при перетаскивании файла/папки */
+    .btn-upload-file.drop-hover,
+    .btn-upload-folder.drop-hover {
+      border-color: rgba(var(--accent-rgb), 0.95);
+      box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.35), 0 6px 24px rgba(var(--accent2-rgb), 0.45);
+      transform: translateY(-2px);
+    }
+
+    /* File info */
+    .file-info {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 12px 0;
+      font-size: 13px;
+      line-height: 1.6;
+      word-break: break-all;
+    }
+    .file-info .label { color: var(--text-dim); }
+    .file-info .value { color: var(--accent); }
+
+    /* Progress bar */
+    .progress-container {
+      margin: 16px 0;
+    }
+    .progress-bar {
+      height: 6px;
+      background: rgba(var(--ov-rgb), 0.063);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+    .progress-eta { color: var(--accent); }
+
+    /* Download mode indicator */
+    .download-mode {
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .download-mode.direct {
+      background: #00e67620;
+      color: var(--success);
+      border: 1px solid #00e67640;
+    }
+    .download-mode.server {
+      background: #00d4ff10;
+      color: var(--accent);
+      border: 1px solid #00d4ff30;
+    }
+
+    /* Log / status output */
+    .log {
+      background: #00000040;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 12px;
+    }
+    .log .line { color: var(--text-dim); }
+    .log .line.success { color: var(--success); }
+    .log .line.error { color: var(--error); }
+    .log .line.info { color: var(--accent); }
+    .log .line.warn { color: var(--warning); }
+
+    /* Auth section */
+    #authSection { text-align: center; padding: 40px 20px; }
+    #authSection .pair-code {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      color: var(--accent);
+      background: #00000040;
+      padding: 16px 32px;
+      border-radius: 8px;
+      display: inline-block;
+      margin: 16px 0;
+      font-family: monospace;
+    }
+    /* BUG-WHITESCREEN-001: #authPage теперь видим по умолчанию (display: flex).
+       Если JS не загрузится — пользователь увидит страницу авторизации
+       с индикатором загрузки вместо белого экрана. */
+    #authPage { display: flex; }
+    #mainSection { display: none; }
+
+    /* Auth Page — первый экран */
+    #authPage {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 60px);
+      padding: 40px 24px;
+    }
+    #authPage.visible {
+      display: flex;
+    }
+    #authPage .auth-card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 440px;
+      width: 100%;
+      border: 1px solid rgba(var(--ov-rgb), 0.082);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    #authPage .auth-card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 20px 0;
+      text-align: center;
+    }
+    #authPage .auth-card .auth-step { display: none; }
+    #authPage .auth-card .auth-step.active { display: block; }
+    #authPage .auth-card label {
+      font-size: 13px;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 6px;
+    }
+    #authPage .auth-card input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(var(--ov-rgb), 0.125);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    #authPage .auth-card input:focus {
+      border-color: var(--accent);
+    }
+    #authPage .auth-card .btn {
+      width: 100%;
+      margin-top: 12px;
+      justify-content: center;
+    }
+    #authPage .auth-status {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+      min-height: 18px;
+      text-align: center;
+    }
+    #authPage .auth-error {
+      display: none;
+      font-size: 12px;
+      color: var(--error);
+      background: #ff525210;
+      border: 1px solid #ff525230;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+    #authPage .auth-footer {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 16px;
+      text-align: center;
+      line-height: 1.4;
+    }
+    #authPage .auth-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(var(--ov-rgb), 0.082);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    /* Tabs */
+    /* Tabs: панель НЕ скроллится по горизонтали (иначе часть вкладок просто
+       уезжает за край) — вкладки сжимаются, а не влезшая подпись заканчивается
+       многоточием «…». Гейт: tests/tabs-overflow.test.ts (T2–T4). */
+    .tabs {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 10px;
+      margin-bottom: 24px;
+      background: var(--tabs-bg);
+      padding: 8px;
+      border-radius: var(--tab-frame-r);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: var(--blur-bar);
+      /* D-170: равные ширины вкладок; если равные доли меньше самой широкой
+         подписи — панель едет горизонтально (решение владельца 2026-11-04:
+         многоточие и перенос строк отклонены, переполнение — скролл). */
+      overflow-x: auto;
+      overflow-y: hidden;
+      /* Плавная прокрутка (smooth) здесь СОЗНАТЕЛЬНО не ставится: колесо над
+         панелью скроллит её горизонтально (D-170) прямыми инкрементами
+         scrollLeft — анимация на частых дельтах колеса даёт «резиновый» лаг. */
+      scrollbar-width: thin;
+      scrollbar-color: rgba(var(--accent-rgb), 0.35) transparent;
+      /* Дефолт до первого замера layoutTabStrip() — он ставит точное значение. */
+      --tab-w: 110px;
+    }
+    /* Скроллбар переполнения — тонкий, в стиле темы (виден только когда
+       вкладки реально не влезли). */
+    .tabs::-webkit-scrollbar { height: 6px; }
+    .tabs::-webkit-scrollbar-track { background: transparent; }
+    .tabs::-webkit-scrollbar-thumb {
+      background: rgba(var(--accent-rgb), 0.3);
+      border-radius: 3px;
+    }
+    /* Подпись — ОТДЕЛЬНЫЙ класс `.tab-label`, а не `.tab span`: под `.tab span`
+       попадал бейдж непрочитанных `.chat-tab-unread` и растягивался на всю
+       вкладку. Многоточия НЕТ (D-170): ширину вкладки задаёт layoutTabStrip()
+       по самой широкой подписи — полный текст виден всегда; overflow:hidden —
+       только жёсткая страховка на время до первого замера. */
+    .tab-label {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-align: center;
+    }
+    .tab {
+      /* Равные ширины (D-170): всем вкладкам одна ширина --tab-w — максимум
+         из «доля окна» и «самая широкая подпись». Влезают — занимают всю
+         панель ровно, не влезают — панель скроллится (overflow-x: auto). */
+      flex: 0 0 var(--tab-w);
+      width: var(--tab-w);
+      min-width: 0;
+      padding: 10px 6px;
+      border-radius: var(--r-tab);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      border: 1px solid transparent;
+      background: transparent;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      letter-spacing: var(--tab-ls);
+      text-transform: var(--tab-case);
+    }
+    .tab:hover { 
+      background: rgba(var(--ov-rgb), 0.03); 
+      color: var(--text);
+    }
+    .tab:hover .tab-icon-3d {
+      transform: scale(1.15) translateY(-2px);
+      filter: drop-shadow(0 4px 8px rgba(var(--accent-rgb), 0.4));
+    }
+    .tab.active {
+      color: var(--accent);
+      background: var(--tab-active-bg);
+      border: 1px solid var(--tab-active-line);
+      box-shadow: var(--tab-active-shadow);
+    }
+    .tab.active .tab-icon-3d {
+      filter: drop-shadow(0 2px 8px rgba(var(--accent-rgb), 0.5));
+    }
+    .tab-icon-3d {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  filter 0.3s ease;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+    }
+    .tab-content { display: none; animation: fadeIn 0.3s ease-out; }
+    .tab-content.active { display: block; }
+    /* Узкое окно: меньше иконка и отступы — подпись дольше остаётся целой.
+       Обрезка «…» остаётся последним средством, а не первым. */
+    @media (max-width: 1180px) {
+      .tabs { gap: 6px; padding: 6px; }
+      .tab { padding: 8px 4px; gap: 4px; }
+      .tab-icon-3d { width: 26px; height: 26px; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Search result cards */
+    .search-result-card {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(var(--ov-rgb), 0.063);
+      transition: border-color 0.2s;
+      /* BUG-CARD-OVERFLOW-001: длинное имя файла (один токен без пробелов,
+         ~120+ символов) не должно выталкивать «👤 Загрузил» и другие соседи
+         за край карточки. Любой длинный токен внутри карточки переносится
+         по символам; текст остаётся обычным текстом — выделяется и копируется
+         как раньше (скролл/бегущая строка не годятся: обрезают и ломают
+         копирование). Electron 22 (Chromium 108) — поддержка полная. */
+      overflow-wrap: anywhere;
+    }
+    .search-result-card:hover { border-color: var(--accent); }
+    /* Фасетная панель каталога (Phase 3) */
+    .facet-panel {
+      background: var(--surface2);
+      border: 1px solid rgba(var(--ov-rgb), 0.063);
+      border-radius: 10px;
+      padding: 12px 14px;
+      position: sticky; top: 12px;
+      max-height: 70vh; overflow-y: auto;
+    }
+    .facet-panel h4 {
+      margin: 0 0 4px 0; font-size: 14px; color: var(--text);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .facet-clear {
+      font-size: 12px; color: var(--accent); background: none; border: none;
+      cursor: pointer; padding: 2px 4px;
+    }
+    .facet-clear:hover { text-decoration: underline; }
+    .facet-group { margin-top: 12px; }
+    .facet-group-title {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+      color: var(--text-dim); margin-bottom: 6px;
+    }
+    .facet-option {
+      display: flex; justify-content: space-between; align-items: center;
+      width: 100%; text-align: left; font-size: 13px;
+      padding: 4px 8px; margin-bottom: 2px;
+      border-radius: 8px; border: 1px solid transparent;
+      background: none; color: var(--text); cursor: pointer;
+    }
+    .facet-option:hover { background: rgba(var(--ov-rgb), 0.06); }
+    .facet-option.active {
+      background: rgba(80,140,255,0.18); border-color: var(--accent);
+      color: var(--accent);
+    }
+    .facet-option .facet-count {
+      font-size: 11px; color: var(--text-dim); font-family: monospace;
+    }
+    .search-result-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .search-result-id { color: var(--accent); font-family: monospace; font-size: 14px; }
+    .search-result-size { color: var(--text-dim); font-size: 14px; }
+    .search-result-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .search-result-meta {
+      display: flex;
+      /* BUG-CARD-OVERFLOW-001: длинное имя файла сжимается в пределах своей
+         строки (перенос по символам), «Загрузил» целиком уходит на свою
+         строку — вместо вытеснения за край карточки. */
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    .search-result-meta > span { min-width: 0; }
+    .search-result-meta > span:first-child { word-break: break-all; }
+    .search-result-meta > span:last-child { flex-shrink: 0; }
+    .search-result-desc {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      padding: 8px 10px;
+      background: #00000020;
+      border-radius: 6px;
+      line-height: 1.5;
+    }
+
+    /* ─── Медиа карточки (SP-15 v3, D-069): превьюшки в описании ───────── */
+    .card-media-gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .card-media-thumb {
+      padding: 0;
+      border: 1px solid rgba(var(--ov-rgb), 0.102);
+      border-radius: 6px;
+      background: #00000030;
+      cursor: zoom-in;
+      overflow: hidden;
+      width: 84px;
+      height: 64px;
+      display: block;
+    }
+    .card-media-thumb:hover {
+      border-color: var(--accent, #4aa3ff);
+    }
+    .card-media-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ─── Очередь фото карточки (SP-15 срез 3b, D-069 v4): выбор ДО загрузки ──
+       Приказ владельца: фото выбирают сразу (превью + лимит), а прикрепление к теме
+       идёт автоматически, когда карточка родится на /complete. Поэтому панель — это
+       не только галерея, но и список выбранного с состоянием каждого файла. */
+    .upload-media-panel {
+      display: none;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--glass-border);
+    }
+    .card-media-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .card-media-title { font-size: 15px; font-weight: 600; color: var(--text); }
+    .card-media-status { font-size: 13px; color: var(--text-dim); }
+    .card-media-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .card-add-media-btn {
+      padding: 8px 14px;
+      border: 1px solid var(--accent, #4aa3ff);
+      border-radius: 8px;
+      background: #4aa3ff1a;
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .card-add-media-btn:hover:not(:disabled) { background: #4aa3ff33; }
+    .card-add-media-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .card-media-counter { font-size: 13px; color: var(--text-dim); }
+    .card-media-list {
+      list-style: none;
+      margin: 10px 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .card-media-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      background: #00000030;
+      border: 1px solid rgba(var(--ov-rgb), 0.078);
+      border-radius: 8px;
+    }
+    .card-media-item[data-status="error"] { border-color: #ff6b6b66; }
+    .card-media-preview {
+      width: 64px;
+      height: 48px;
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 6px;
+      background: #00000040;
+      font-size: 20px;
+    }
+    .card-media-item-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    /* Строка вложения карточки (SP-20): превью и кнопка вида не наезжают на текст. */
+    .attachment-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 6px 8px;
+      background: #00000030;
+      border: 1px solid rgba(var(--ov-rgb), 0.078);
+      border-radius: 8px;
+    }
+    .attachment-item .attachment-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    /* Превью изображения-вложения в реальном времени: клик → лайтбокс. */
+    .attachment-item .attachment-preview {
+      flex: 0 0 auto;
+      width: 72px;
+      height: 54px;
+      object-fit: cover;
+      border: 1px solid rgba(var(--ov-rgb), 0.102);
+      border-radius: 6px;
+      cursor: zoom-in;
+      display: block;
+    }
+    .attachment-item .attachment-preview:hover {
+      border-color: var(--accent, #4aa3ff);
+    }
+    /* Название вида вложения — тактическая кнопка «Просмотр»
+       (ISP connection eMMC, Repair Pictures, Service Manual…). */
+    .attachment-item .attachment-kind-btn {
+      flex: 0 0 auto;
+      padding: 4px 10px;
+      border: 1px solid rgba(var(--ov-rgb), 0.149);
+      border-radius: 6px;
+      background: #00000030;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 170px;
+    }
+    .attachment-item .attachment-kind-btn:hover {
+      border-color: var(--accent, #4aa3ff);
+    }
+    .attachment-item .attachment-note {
+      width: 100%;
+      font-size: 12px;
+      color: var(--text-dim);
+      overflow-wrap: break-word;
+    }
+
+
+    .card-media-meta {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .card-media-name {
+      font-size: 13px;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .card-media-sub { font-size: 12px; color: var(--text-dim); }
+    .card-media-warn { color: #ffb74d; }
+    .card-media-state { font-size: 12px; color: var(--text-dim); }
+    .card-media-ring { width: 32px; height: 32px; flex: 0 0 auto; }
+    .fw-ring { display: block; }
+    .fw-ring-track { stroke: rgba(var(--ov-rgb), 0.149); }
+    .fw-ring-value {
+      stroke: var(--accent, #4aa3ff);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.2s linear;
+    }
+    .fw-ring--spin { animation: fw-ring-spin 1s linear infinite; }
+    @keyframes fw-ring-spin { to { transform: rotate(360deg); } }
+    .card-media-remove,
+    .card-media-retry {
+      flex: 0 0 auto;
+      padding: 4px 10px;
+      border: 1px solid rgba(var(--ov-rgb), 0.149);
+      border-radius: 6px;
+      background: #00000030;
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .card-media-remove { padding: 4px 8px; }
+    .card-media-remove:hover:not(:disabled),
+    .card-media-retry:hover { border-color: var(--accent, #4aa3ff); }
+    .card-media-remove:disabled { opacity: 0.4; cursor: not-allowed; }
+    .card-media-gallery-host { margin-top: 8px; }
+
+    /* ─── Лайтбокс: увеличение ОРИГИНАЛА без потерь (GPU-трансформ) ────── */
+    .media-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #000000e6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .media-lightbox-stage {
+      position: relative;
+      width: 92vw;
+      height: 88vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: grab;
+    }
+    .media-lightbox-stage:active {
+      cursor: grabbing;
+    }
+    .media-lightbox-img {
+      max-width: 100%;
+      max-height: 100%;
+      transform-origin: center center;
+      will-change: transform;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .media-lightbox-close,
+    .media-lightbox-prev,
+    .media-lightbox-next {
+      position: absolute;
+      background: rgba(var(--ov-rgb), 0.102);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 26px;
+      line-height: 1;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    .media-lightbox-close { top: 16px; right: 16px; }
+    .media-lightbox-prev { left: 16px; top: 50%; }
+    .media-lightbox-next { right: 16px; top: 50%; }
+    .media-lightbox-hint {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #ffffffb0;
+      font-size: 13px;
+    }
+    /* Upload form fields in search card */
+    .search-result-fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: #00000020;
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+    .search-result-fields .field-icon {
+      margin-right: 2px;
+    }
+    .search-result-fields strong {
+      color: var(--text);
+    }
+    .search-result-fields .field-empty {
+      opacity: 0.5;
+      font-style: italic;
+    }
+    .search-result-fields .field-empty strong {
+      color: var(--text-dim);
+    }
+    /* ─── Правка полів картки власником (D-186 / D-187) ────────────────────
+       Модалка в стилі теми. ДО ФІКСУ розмітка висіла на `.modal-overlay` /
+       `.modal-content`, яких у CSS НЕ БУЛО: без `position: fixed` форма ставала
+       звичайним блоком у кінці `<body>` — «простирадло» інпутів під сторінкою
+       замість вікна. Стиль повторює мову `.vault-share-*` (та сама тема). */
+    .card-edit-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: var(--blur-bar);
+    }
+    .card-edit-dialog {
+      width: min(560px, 100%);
+      max-height: min(86vh, 720px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 20px;
+      overflow: hidden;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--r-card);
+      box-shadow: var(--shadow-card);
+      backdrop-filter: var(--blur-card);
+      color: var(--text);
+      font-family: var(--font-ui);
+    }
+    .card-edit-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .card-edit-title {
+      font-family: var(--font-head);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .card-edit-close {
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      border-radius: var(--r-btn);
+      border: 1px solid var(--glass-border);
+      background: rgba(var(--ov-rgb), 0.04);
+      color: var(--text-dim);
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .card-edit-close:hover,
+    .card-edit-close:focus-visible {
+      color: var(--text);
+      border-color: rgba(var(--accent-rgb), 0.45);
+    }
+    .card-edit-hint {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-dim);
+    }
+    .card-edit-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      /* flex:1 + min-height:0 — иначе высокий список полей выдавливает кнопки
+         за пределы диалога (dialog стоит на overflow:hidden) и они обрезаются. */
+      flex: 1 1 auto;
+      min-height: 0;
+      padding-right: 4px;
+    }
+    .card-edit-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .card-edit-label {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .card-edit-input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: var(--r-input);
+      border: 1px solid var(--glass-border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+    }
+    .card-edit-input:focus {
+      outline: none;
+      border-color: rgba(var(--accent-rgb), 0.55);
+    }
+    textarea.card-edit-input {
+      resize: vertical;
+      min-height: 64px;
+    }
+    .card-edit-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 2px;
+    }
+    .card-edit-actions .btn {
+      flex: 1;
+    }
+    /* Ряд «інструментів» карточки: дрібні дії власника окремо від «Скачати».
+       ДО ФІКСУ кнопки стояли в одному flex-ряду з кнопкою `width:100%` і
+       стискались у стовпчики — текст переносився по літерах. */
+    .card-tools-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .card-tools-row .btn {
+      flex: 1 1 auto;
+      min-width: 140px;
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+    @media (max-width: 560px) {
+      .card-edit-overlay { padding: 10px; }
+      .card-edit-dialog { padding: 14px; }
+      .card-edit-actions { flex-direction: column; }
+    }
+    .search-status { font-size: 13px; }
+    .search-status.success { color: var(--success); }
+    .search-status.error { color: var(--error); }
+
+    /* ── Дерево публичного каталога (A3, «Весь каталог») ── */
+    .catalog-tree { display: flex; flex-direction: column; gap: 10px; }
+    .tree-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
+    .tree-crumb {
+      background: none; border: none; padding: 2px 4px; cursor: pointer;
+      color: var(--accent); font-size: 13px; font-family: inherit;
+    }
+    .tree-crumb:hover { text-decoration: underline; }
+    .tree-sep { color: var(--text-dim); }
+    .tree-level { display: flex; flex-direction: column; gap: 6px; }
+    .tree-folder {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      width: 100%; text-align: left; cursor: pointer; font-family: inherit;
+      padding: 10px 14px; border-radius: 12px; font-size: 14px;
+      border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.2);
+      color: var(--text);
+    }
+    .tree-folder:hover { border-color: var(--accent); }
+    .tree-folder-count { color: var(--text-dim); font-family: monospace; }
+    .tree-empty { color: var(--text-dim); font-size: 13px; padding: 8px 0; }
+
+    /* Toast notifications for billing */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+      max-width: 400px;
+    }
+
+    .toast {
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+      line-height: 1.4;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+      animation: toastIn 0.35s ease-out forwards;
+      pointer-events: auto;
+      word-break: break-word;
+      backdrop-filter: blur(8px);
+    }
+
+    .toast.toast-hiding {
+      animation: toastOut 0.35s ease-in forwards;
+    }
+
+    .toast-success {
+      background: rgba(0, 230, 118, 0.92);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+    }
+
+    .toast-error {
+      background: rgba(255, 82, 82, 0.92);
+      border: 1px solid rgba(255, 82, 82, 0.3);
+    }
+
+    .toast-info {
+      background: rgba(0, 212, 255, 0.92);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+    }
+
+    @keyframes toastIn {
+      from {
+        transform: translateY(24px) scale(0.96);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes toastOut {
+      from {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+      to {
+        transform: translateY(24px) scale(0.96);
+        opacity: 0;
+      }
+    }
+  /* ── Billing Package Cards (3D + hover + selection) ────────────── */
+  .billing-package-card {
+    position: relative;
+    cursor: pointer;
+    padding: 20px;
+    border-radius: 14px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s ease,
+                border-color 0.3s ease;
+    perspective: 600px;
+    text-align: center;
+  }
+  .billing-package-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: rgba(var(--accent-rgb), 0.4);
+    box-shadow: 0 8px 32px rgba(var(--accent2-rgb), 0.2),
+                inset 0 0 30px rgba(var(--accent-rgb), 0.05);
+  }
+  .billing-package-card:hover .billing-card-icon {
+    transform: scale(1.12) translateY(-3px) rotateY(8deg);
+    filter: drop-shadow(0 4px 12px rgba(255, 193, 7, 0.4));
+  }
+  .billing-package-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.3),
+                inset 0 0 20px rgba(var(--accent-rgb), 0.08);
+    background: linear-gradient(135deg, rgba(var(--accent2-rgb), 0.12), var(--glass));
+  }
+  .billing-package-card[data-popular="true"] {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, var(--surface2) 0%, var(--surface-deep) 100%);
+  }
+  .billing-badge-popular {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--solid-a), var(--solid-b));
+    color: var(--solid-fg);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .billing-card-icon {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    margin: 12px auto 10px;
+    display: block;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                filter 0.3s ease;
+  }
+  .billing-card-name {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .billing-card-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    min-height: 32px;
+    line-height: 1.4;
+  }
+  .billing-card-price {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .billing-card-points {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .billing-card-vault-note {
+    font-size: 11px;
+    opacity: 0.8;
+    line-height: 1.35;
+    margin-top: 4px;
+  }
+  .billing-card-vault {
+    font-size: 12px;
+    font-weight: 600;
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 8px;
+    padding: 4px 8px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  /* GEO_Unlock — второй бонус пакета (D-158): тот же срок, что и у хранилища.
+     Цвет и форма берутся из ВЫБРАННОЙ темы (--accent/--r-badge), а не зашитым
+     голубым «стеклом ARTEL» (D-159): иначе на «Майстерні»/«Пульті» бейдж остался
+     бы пятном чужого стиля. Гейт: tests/billing-package-tool-bonus.test.ts → B6. */
+  .billing-card-tool {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(var(--accent-rgb), 0.12);
+    border: 1px solid rgba(var(--accent-rgb), 0.34);
+    border-radius: var(--r-badge, 8px);
+    padding: 4px 8px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  /* ── 3D Action Buttons (start upload, download, search) ───────── */
+  .btn-action-3d {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 28px;
+    border-radius: 14px;
+    border: 1px solid rgba(var(--accent-rgb), 0.4);
+    background: linear-gradient(135deg, var(--solid-a), var(--solid-b));
+    color: var(--solid-fg);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(var(--accent2-rgb), 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-action-3d:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .btn-action-3d:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--solid-a-hover), var(--solid-a));
+    border-color: rgba(var(--accent-rgb), 0.7);
+    box-shadow: 0 6px 28px rgba(var(--accent2-rgb), 0.4);
+    transform: translateY(-2px);
+  }
+  .btn-action-3d:hover:not(:disabled) .btn-action-icon {
+    transform: scale(1.15) translateY(-2px);
+    filter: drop-shadow(0 3px 8px rgba(var(--accent-rgb), 0.5));
+  }
+  .btn-action-3d:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(var(--accent2-rgb), 0.2);
+  }
+  .btn-action-icon {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 4px rgba(0,0,0,0.3));
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                filter 0.3s ease;
+  }
+
+  /* 🔒 Скрытые секции UI (оставлены в DOM для обратной совместимости кода) */
+  #uploadModeSection { display: none !important; }
+  #downloadConfigPanel { display: none !important; }
+  #debugPanel { display: none !important; }
+
+  /* ─── Select / Option контраст (WebKitGTK / Tauri Linux) ──────────────
+     Нативный popup у <select> рисуется системным виджетом с белым фоном,
+     а option наследует светлый color:var(--text) → белый текст на белом.
+     Явный тёмный фон + светлый текст гарантируют читаемость раскрытого
+     списка во всех WebView (WebKitGTK, WebView2, WKWebView). */
+  select option {
+    background: var(--surface2);
+    color: var(--text);
+  }
+  select option:checked {
+    background: var(--accent);
+    color: #0c0c0c;
+  }
+  select option:disabled {
+    color: var(--text-dim);
+  }
+  /* ─── SP-13: панель чата под карточкой (D-052) ─────────────────── */
+  .chat-panel {
+    border: 1px solid var(--border, #3a3f4a);
+    border-radius: 8px;
+    padding: 10px;
+    background: rgba(var(--ov-rgb), 0.03);
+  }
+  .chat-tabs { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .chat-tab.active { border-color: var(--accent); color: var(--accent); }
+  .chat-quota { margin-left: auto; font-size: 0.85em; opacity: 0.8; }
+  .chat-rag {
+    border-left: 3px solid var(--accent, #6aa1ff);
+    padding: 4px 8px;
+    margin-bottom: 8px;
+    background: rgba(106, 161, 255, 0.06);
+    border-radius: 0 6px 6px 0;
+  }
+  .chat-messages {
+    max-height: 260px;
+    min-height: 60px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.93em;
+  }
+  .chat-msg {
+    padding: 5px 8px;
+    border-radius: 6px;
+    background: rgba(var(--ov-rgb), 0.05);
+    word-break: break-word;
+  }
+  .chat-msg.ai { background: rgba(106, 161, 255, 0.10); }
+  /* Q1-A (2026-10-11): «крутилка» ожидания ИИ — пульсация статуса
+     «Думаю… Nс» (сервер потоковых событий не шлёт, тик — клиентский 1с). */
+  @keyframes chat-think-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  .chat-thinking {
+    animation: chat-think-pulse 1.2s ease-in-out infinite;
+    font-weight: 600;
+  }
+  .search-chat-toggle.active { border-color: var(--accent); color: var(--accent); }
+  .search-chat-toggle { width: 100%; }
+
+
+    /* SP-28: contextual chat list and stable message composer. */
+    .community-layout { --community-title-color:#a9c4df; display:grid; grid-template-columns:minmax(220px, 30%) minmax(0, 1fr); gap:18px; min-height:540px; }
+    .community-sidebar,.community-conversation { min-width:0; padding:16px; border:1px solid var(--glass-border); border-radius:14px; background:var(--surface); }
+    .community-sidebar h2,.community-conversation h2 { margin:0 0 16px; font-size:18px; overflow-wrap:anywhere; }
+    .community-chat-list { max-height:65vh; overflow-y:scroll; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:var(--text-dim) var(--surface); }
+    .community-chat-list::-webkit-scrollbar { width:8px; }
+    .community-chat-list::-webkit-scrollbar-thumb { background:var(--text-dim); border:2px solid var(--surface); border-radius:8px; }
+    .community-chat { display:block; width:100%; padding:13px 10px; text-align:left; color:inherit; border:1px solid transparent; border-bottom-color:var(--glass-border); background:transparent; border-radius:8px; cursor:pointer; }
+    .community-chat:hover,.community-chat.selected { background:rgba(56,189,248,.1); border-color:var(--accent); }
+    .community-chat-top { display:flex; gap:8px; align-items:flex-start; justify-content:space-between; }
+    .community-chat-heading { display:block; min-width:0; flex:1; }
+    .community-title { display:block; margin-top:5px; color:var(--community-title-color); font-size:13px; font-weight:600; letter-spacing:.01em; line-height:1.45; white-space:normal; overflow-wrap:anywhere; }
+    .community-card-detail { display:block; margin-top:4px; color:var(--text-dim); font-size:12px; line-height:1.5; white-space:normal; overflow-wrap:anywhere; }
+    .community-kind { display:inline-block; max-width:100%; padding:2px 7px; border:1px solid currentColor; border-radius:5px; color:var(--text-dim); font-size:10px; line-height:1.5; font-weight:600; letter-spacing:.04em; white-space:normal; overflow-wrap:anywhere; }
+    .community-kind.firmware { color:#8ed2ff; background:rgba(56,189,248,.08); }
+    .community-kind.documentation { color:#f6cd7a; background:rgba(245,158,11,.08); }
+    .community-kind.software { color:#7de3c2; background:rgba(16,185,129,.08); }
+    .community-conversation h2 .community-title { font-size:17px; }
+    .community-presence { margin-bottom:18px; padding:14px 16px; background:var(--surface); border:1px solid var(--glass-border); border-radius:14px; }
+    .community-presence[hidden],.community-presence [hidden] { display:none; }
+    .community-presence-top { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; }
+    .community-presence h2 { font-size:14px; font-weight:650; margin:0; }
+    .community-presence h2::before { content:""; display:inline-block; width:7px; height:7px; margin-right:8px; border-radius:50%; background:#7de3c2; }
+    .community-online-count { margin-left:auto; font-size:12px; color:var(--text-dim); }
+    .community-online-window { font-size:11px; color:var(--text-dim); margin-top:5px; }
+    .community-online-preview,.community-online-names { display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:10px; font-size:12px; line-height:1.6; }
+    .community-online-name { color:var(--text); overflow-wrap:anywhere; min-width:0; }
+    .community-online-name.mine { color:#7de3c2; font-weight:600; }
+    .community-online-name small { font-weight:400; color:var(--text-dim); }
+    .community-presence summary { margin-top:8px; color:var(--accent); font-size:12px; cursor:pointer; width:fit-content; }
+    .community-online-names { max-height:200px; overflow-y:auto; padding-right:8px; }
+    .community-presence button:focus-visible,.community-presence summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+    .community-unread { flex-shrink:0; border-radius:12px; padding:2px 8px; background:#0369a1; color:white; font-size:12px; }
+    .community-preview { display:block; margin:7px 0; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:.8; }
+    .community-chat time,.community-entry time { opacity:.7; font-size:11px; }
+    .community-history-wrap { position:relative; }
+    .community-history { max-height:50vh; min-height:110px; overflow-y:scroll; overflow-x:hidden; padding:4px; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--text-dim) var(--surface); }
+    .community-history::-webkit-scrollbar { width:8px; }
+    .community-history::-webkit-scrollbar-thumb { background:var(--text-dim); border:2px solid var(--surface); border-radius:8px; }
+    .community-jump { position:absolute; right:14px; bottom:12px; width:34px; height:34px; border-radius:50%; border:0; padding:0; background:#0ea5e9; color:white; font-size:16px; line-height:1; cursor:pointer; box-shadow:0 2px 8px rgba(2,8,23,.35); }
+    /* D-134: спойлер «Кто скачал» под карточкой — мелко, но читаемо. */
+    .card-downloaders { margin:10px 0 0; }
+    .card-downloaders summary { cursor:pointer; font-size:12.5px; color:var(--text-dim); user-select:none; }
+    .card-downloaders summary:hover { color:var(--text); }
+    .card-downloaders-list { margin:7px 0 0; padding-left:16px; font-size:12px; line-height:1.55; }
+    .card-downloaders-item.mine { color:var(--community-author-color); font-weight:600; }
+    .card-downloaders-mine { opacity:.75; font-weight:400; }
+    .card-downloaders-more { margin-top:5px; font-size:11.5px; opacity:.65; }
+    /* D-135: прыжок «из чата в карточку» — компактная карточка и подсветка. */
+    .search-jump-host { margin:0 0 12px; border:1px dashed var(--glass-border); border-radius:12px; padding:2px; }
+    .search-focus-flash { animation:searchFlash 1.3s ease-out; }
+    @keyframes searchFlash { 0% { box-shadow:0 0 0 3px #38bdf8; background:rgba(14,165,233,.14); } 100% { box-shadow:none; } }
+    .community-open-card,.search-return-chip {
+      --jump-text:#d2efff; --jump-bg:#163b53; --jump-border:var(--accent); --jump-hover:#205474;
+      display:inline-flex; align-items:center; justify-content:center; max-width:100%;
+      padding:7px 12px; border:1px solid var(--jump-border); border-radius:8px;
+      background:var(--jump-bg); color:var(--jump-text); font-size:13px; font-weight:600;
+      line-height:1.4; white-space:normal; overflow-wrap:anywhere;
+      transition:background-color .15s ease,border-color .15s ease;
+    }
+    .community-open-card { margin-left:10px; vertical-align:middle; }
+    .search-return-chip {
+      --jump-text:#d1f5e8; --jump-bg:#153e39; --jump-border:#65c7ad; --jump-hover:#20574e;
+      margin-right:8px;
+    }
+    .community-open-card:hover:not(:disabled),.search-return-chip:hover:not(:disabled) { background:var(--jump-hover); border-color:var(--jump-text); }
+    .community-layout .community-open-card:focus-visible,.search-return-chip:focus-visible {
+      outline:2px solid var(--jump-text); outline-offset:3px;
+    }
+    .community-open-card:active:not(:disabled),.search-return-chip:active:not(:disabled) { background:var(--jump-bg); }
+    .community-jump:focus-visible { outline:2px solid #38bdf8; outline-offset:2px; }
+    .community-entry { margin:0 0 12px; padding:12px; border-radius:12px; background:rgba(148,163,184,.09); }
+    .community-entry.mine { background:rgba(14,165,233,.13); }
+    .community-entry header { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:7px; }
+    .community-entry header strong { color:var(--community-author-color); font-size:13px; font-weight:600; }
+    .community-body { font-size:14.5px; white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.55; }
+    .community-delete { margin-left:auto; border:0; padding:4px; background:transparent; color:inherit; opacity:.75; cursor:pointer; }
+    .community-paging,.community-compose-footer { display:flex; align-items:center; gap:8px; margin:12px 0; flex-wrap:wrap; }
+    .community-composer label { display:block; line-height:1.5; }
+    .community-composer textarea { display:block; box-sizing:border-box; width:100%; margin-top:8px; resize:vertical; min-height:76px; padding:10px; color:inherit; background:var(--bg); border:1px solid var(--glass-border); border-radius:8px; font:inherit; }
+    .community-compose-footer [role=status] { flex:1; font-size:13px; }
+    .community-empty { opacity:.7; padding:12px 0; }
+    .community-discuss { margin-top:12px; }
+    .file-reviews { margin:12px 0; border-top:1px solid var(--glass-border); padding-top:10px; }
+    .file-reviews summary { cursor:pointer; padding:8px 0; font-weight:600; }
+    .file-reviews-content { padding-top:10px; }
+    .community-layout button:focus-visible,.file-reviews button:focus-visible { outline:2px solid #38bdf8; outline-offset:3px; }
+    @media(max-width:760px) { .community-layout { grid-template-columns:1fr; } .community-chat-list { max-height:220px; } }
+    .search-id-row {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;}
+    .search-id-row input {width:180px;padding:10px 12px;border-radius:8px;border:1px solid var(--glass-border);background:rgba(0,0,0,.2);color:var(--text);}
+    .search-id-row input:focus-visible {outline:2px solid var(--accent);outline-offset:2px;}
+    .community-quote,.community-reply-draft {border-left:3px solid var(--accent);padding:8px 12px;margin:8px 0;background:rgba(var(--ov-rgb), .04);white-space:pre-wrap;overflow-wrap:anywhere;}
+    .community-reply-draft {display:flex;gap:8px;align-items:center;justify-content:space-between;}
+    .community-reply-draft[hidden],.community-emoji-picker[hidden] {display:none;}
+    .community-reply-draft button {background:none;color:var(--text);border:0;cursor:pointer;font-size:22px;}
+    .community-reply-action {padding:3px 8px;font-size:12px;}
+    /* Кнопка вызова пикера — плитка в материале приложения (.btn-primary):
+       та же высота, что у «Отправить» (align-self:stretch в футере), тот же
+       radius 12 и cyan-градиент, а не плоская плашка 36×36 (жалоба владельца
+       «кнопка эмодзи не в стиле — бедная»). */
+    .community-emoji-host { position:relative; display:flex; align-self:stretch; }
+    .community-emoji-toggle {
+      display:inline-flex; align-items:center; justify-content:center;
+      box-sizing:border-box;
+      align-self:stretch; height:100%;
+      min-width:52px; min-height:44px; padding:0 10px;
+      border-radius:12px;
+      border:1px solid rgba(var(--accent-rgb), 0.32);
+      background:linear-gradient(135deg, rgba(var(--accent-rgb), 0.20), rgba(var(--accent2-rgb), 0.12));
+      color:var(--text);
+      cursor:pointer;
+      outline:none;
+      transition:background 0.2s cubic-bezier(0.4,0,0.2,1),
+                 border-color 0.2s ease,
+                 box-shadow 0.2s ease,
+                 transform 0.2s cubic-bezier(0.4,0,0.2,1);
+    }
+    .community-emoji-toggle:hover:not([aria-expanded="true"]) {
+      background:linear-gradient(135deg, rgba(var(--accent-rgb), 0.34), rgba(var(--accent2-rgb), 0.22));
+      border-color:rgba(var(--accent-rgb), 0.55);
+      box-shadow:0 0 18px rgba(var(--accent-rgb), 0.18);
+      transform:translateY(-1px);
+    }
+    .community-emoji-toggle:active { transform:translateY(0); }
+    .community-emoji-toggle[aria-expanded="true"] {
+      background:linear-gradient(135deg, rgba(var(--accent-rgb), 0.48), rgba(var(--accent2-rgb), 0.30));
+      border-color:rgba(var(--accent-rgb), 0.8);
+      box-shadow:0 0 0 3px rgba(var(--accent-rgb), 0.22), 0 0 20px rgba(var(--accent-rgb), 0.25);
+    }
+    .community-emoji-toggle svg.emoji-toggle-icon {
+      display:block; width:24px; height:24px;
+      filter:drop-shadow(0 2px 3px rgba(2,8,23,0.45));
+    }
+    /* Панель смайликов — карточка в стиле приложения. */
+    .community-emoji-picker {
+      position:absolute; bottom:100%; left:0;
+      display:grid; grid-template-columns:repeat(6,40px); gap:7px;
+      padding:9px; margin-bottom:8px;
+      border:1px solid var(--glass-border);
+      border-radius:12px;
+      background:var(--surface);
+      box-shadow:0 10px 40px rgba(0,0,0,0.45);
+      z-index:10;
+    }
+    .community-emoji-picker button {
+      width:40px; height:40px; border-radius:10px;
+      border:0; background:transparent;
+      color:var(--text); font-size:20px; cursor:pointer;
+      transition:background 0.15s, color 0.15s;
+    }
+    .community-emoji-picker button:hover {
+      background:var(--accent); color:#0b0c0e;
+    }
+    .community-emoji-picker button:focus-visible {
+      outline:2px solid var(--accent); outline-offset:2px;
+    }
+    .chat-setting {display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer;}
+    .chat-setting input {width:18px;height:18px;accent-color:var(--accent);}
+    .settings-hint {color:var(--text-dim);margin:12px 0;}
+    /* Тема оформления: сегментированный переключатель. */
+    .settings-group {display:flex;flex-direction:column;gap:10px;margin:14px 0;padding-top:12px;border-top:1px solid var(--glass-border);}
+    .settings-label {font-size:12px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;}
+    .theme-segment {display:flex;gap:6px;flex-wrap:wrap;}
+    .theme-btn {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 12px; border-radius:10px;
+      border:1px solid var(--glass-border);
+      background:var(--surface2);
+      color:var(--text-dim);
+      font-size:12px; font-weight:600;
+      cursor:pointer; transition:all 0.2s;
+    }
+    .theme-btn:hover { border-color:rgba(var(--ov-rgb), 0.2); color:var(--text); }
+    .theme-btn[aria-pressed="true"] {
+      background:var(--accent); border-color:var(--accent); color:var(--bg);
+      box-shadow:0 0 0 3px rgba(var(--accent-rgb), 0.2);
+    }
+    .theme-dot {width:10px;height:10px;border-radius:50%;display:inline-block;flex:0 0 auto;}
+    .theme-btn[data-theme="artel"] .theme-dot {background:var(--accent);}
+    .theme-btn[data-theme="paper"] .theme-dot {background:#a8451a;}
+    .theme-btn[data-theme="photon"] .theme-dot {background:#0a84ff;}
+    .theme-btn[data-theme="hud"] .theme-dot {background:#00e5a8;}
+    /* Выбор звука уведомления (0.6.0): те же кнопки-сегменты, цвет точки — характер звука. */
+    .theme-btn[data-sound-id="drop"] .theme-dot {background:#38bdf8;}
+    .theme-btn[data-sound-id="chime"] .theme-dot {background:#f6c453;}
+    .theme-btn[data-sound-id="ping"] .theme-dot {background:#4ade80;}
+    .theme-btn[data-sound-id="knock"] .theme-dot {background:#cbd5e1;}
+    .theme-btn[data-sound-id="triple"] .theme-dot {background:#c084fc;}
+    .theme-btn[data-sound-id="alert"] .theme-dot {background:#fb7185;}
+    .chat-tab-icon {display:inline-block;}
+    .has-unread .chat-tab-icon {animation:chat-wiggle 4s ease-in-out infinite;transform-origin:50% 80%;}
+    .chat-tab-unread {border-radius:10px;background:var(--accent);color:#fff;font-size:11px;padding:2px 6px;}
+    @keyframes chat-wiggle {0%,30%,100%{transform:rotate(0);}5%,15%,25%{transform:rotate(-15deg);}10%,20%{transform:rotate(15deg);}}
+    @media(prefers-reduced-motion:reduce) {.has-unread .chat-tab-icon {animation:none;}}
+    /* ═══ Пресеты: СТРУКТУРНЫЕ отличия (форма/шрифт/глубина), а не только цвет ═══
+       Блок идёт ПОСЛЕ базовых правил — при равном весе селектора перекрывает их.
+       Смысл: переключение темы меняет язык интерфейса, а не только оттенок. */
+
+    /* 2 · Майстерня: лінійки, підкреслені вкладки, шрифт із зарубками, без скла. */
+    [data-theme="paper"] .header { border-bottom: 2px solid var(--text); }
+    [data-theme="paper"] .logo-title { letter-spacing: 0.6px; }
+    [data-theme="paper"] .card-title { text-transform: none; letter-spacing: 0.3px; font-size: 15px; }
+    [data-theme="paper"] .tabs { border: none; border-bottom: 2px solid var(--text); border-radius: 0; padding: 0; gap: 0; }
+    [data-theme="paper"] .tab { border: none; border-radius: 0; border-bottom: 4px solid transparent; margin-bottom: -2px; }
+    [data-theme="paper"] .tab.active { border-bottom-color: var(--accent); }
+    [data-theme="paper"] .btn-primary { box-shadow: 0 2px 0 var(--btn-primary-line); }
+    [data-theme="paper"] .file-info .value,
+    [data-theme="paper"] .search-result-meta { font-family: var(--font-mono); }
+
+    /* 3 · Photon: сегментовані вкладки однією «колодкою», панель інструментів, скло-кнопки. */
+    [data-theme="photon"] .header { border-bottom: 1px solid var(--glass-border); }
+    [data-theme="photon"] .logo-title { letter-spacing: 0.2px; }
+    [data-theme="photon"] .tabs { gap: 3px; padding: 3px; }
+    [data-theme="photon"] .tab { border: 1px solid transparent; font-weight: 600; }
+    [data-theme="photon"] .tab.active { border-color: var(--tab-active-line); }
+    [data-theme="photon"] .card-title { text-transform: none; letter-spacing: 0.2px; }
+    [data-theme="photon"] .btn-primary { text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.12); }
+    [data-theme="photon"] .btn-secondary { background: linear-gradient(#ffffff, #e9e9e9); }
+
+    /* 4 · HUD: нуль радіусів, кутові дужки на картках, неонові лінії. */
+    [data-theme="hud"] .header { border-bottom: 1px solid var(--accent); }
+    [data-theme="hud"] .logo-title { letter-spacing: 3px; text-shadow: 0 0 12px rgba(var(--accent-rgb), 0.45); }
+    [data-theme="hud"] .card::before,
+    [data-theme="hud"] .card::after { content: ''; position: absolute; width: 13px; height: 13px; pointer-events: none; }
+    [data-theme="hud"] .card::before { top: -1px; left: -1px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+    [data-theme="hud"] .card::after { bottom: -1px; right: -1px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+    [data-theme="hud"] .card-title { letter-spacing: 2px; text-shadow: 0 0 10px rgba(var(--accent-rgb), 0.35); }
+    [data-theme="hud"] .tab { border: 1px solid #122a31; }
+    [data-theme="hud"] .btn { text-transform: uppercase; letter-spacing: 1px; }
+  </style>
+  <!-- Применить сохранённую тему оформления до отрисовки тела (без флеша дефолта) -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('fw_theme');
+        // Актуальные пресеты оформления (D-141). «artel» — базовый вид без атрибута.
+        var presets = ['paper', 'photon', 'hud'];
+        // Старые «цветовые» темы: их больше нет, но у людей они уже в localStorage —
+        // мягко уводим в базовый пресет, чтобы вид не сломался и не мигнул.
+        var legacy = ['forest', 'violet', 'amber'];
+        if (presets.indexOf(t) >= 0) {
+          document.documentElement.dataset.theme = t;
+        } else if (t === 'artel' || legacy.indexOf(t) >= 0 || !t) {
+          document.documentElement.removeAttribute('data-theme');
+        }
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-container">
+      <!-- Логотип ARTEL (K2): знак из HQ-мастера (шестерня + A + рукопожатие).
+           Ассет 128px из public/ рисуется на 42px (запас на HiDPI). Путь задаётся
+           от корня — Vite при сборке переписывает его в "./" (BUG-ELECTRON-ASSET-001). -->
+      <img src="/artel-logo-128.png" width="42" height="42" alt="ARTEL" class="logo-mark" />
+      <div class="logo-text">
+        <span class="logo-title">ARTEL</span>
+        <span class="logo-subtitle">Masters Knowledge Base</span>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="user-pill" id="userPill" style="display: none;">
+        <span class="status-dot disconnected" id="statusDot"></span>
+        <div class="avatar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
+        <span id="statusText" data-i18n="header.disconnected">Не авторизовано</span>
+      </div>
+      <button type="button" class="vault-toggle" id="vaultToggle" style="display:none;"
+              data-i18n-title="vault.toggle_title"
+              title="Переключить личный кабинет / публичное поле">
+        <span id="vaultToggleLabel">🗄️ Личный кабинет</span>
+      </button>
+      <div class="points-pill" id="pointsPill" style="display: none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span id="statusExtra"></span>
+      </div>
+      <div class="lang-switcher" id="langSwitcher">
+        <button type="button" class="lang-btn" data-lang="uk" title="Українська">UK</button>
+        <button type="button" class="lang-btn" data-lang="ru" title="Русский">RU</button>
+        <button type="button" class="lang-btn" data-lang="en" title="English">EN</button>
+      </div>
+      <!-- Версия клиента (справа от языков) -->
+      <div class="version-pill" id="versionPill" style="display:none;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        <span id="versionText">v0.0.0</span>
+      </div>
+      <!-- Прогресс обновления (скрыт по умолчанию, показывается при скачивании) -->
+      <div class="update-progress" id="updateProgress" style="display:none;">
+        <div class="update-progress-bar" id="updateProgressBar"></div>
+        <span id="updateProgressText" style="font-size:11px;color:var(--text-dim);margin-left:6px;"></span>
+      </div>
+      <!-- SP-33/D-180: компактные входящие файлы — кнопка в шапке + поповер.
+           Пульсирующая точка видна сразу; при нескольких файлах список
+           прокручивается, а не растягивает шапку. -->
+      <div class="share-inbox" id="shareInbox" hidden>
+        <button type="button" class="share-inbox-toggle" id="shareInboxToggle"
+                aria-haspopup="dialog" aria-expanded="false"
+                aria-controls="shareInboxPanel">
+          <span class="share-inbox-icon" aria-hidden="true">📨</span>
+          <span class="share-inbox-count" id="shareInboxCount">0</span>
+          <span class="share-inbox-pulse" aria-hidden="true"></span>
+        </button>
+        <div class="share-inbox-panel" id="shareInboxPanel" role="dialog"
+             aria-labelledby="shareInboxPanelTitle" hidden>
+          <div class="share-inbox-head">
+            <span class="share-inbox-panel-title" id="shareInboxPanelTitle"
+                  data-i18n="vault.share_inbox_panel_title">Вхідні файли</span>
+            <button type="button" class="share-inbox-close" id="shareInboxClose"
+                    data-i18n-title="common.close" title="Закрити">✕</button>
+          </div>
+          <div class="share-inbox-list" id="shareInboxList"></div>
+          <div class="share-inbox-hint" id="shareInboxHint"
+               data-i18n="vault.share_inbox_hint"></div>
+        </div>
+      </div>
+      <button class="btn-logout" id="logoutBtn" title="Выйти из аккаунта" data-i18n-title="common.logout_title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        <span data-i18n="common.logout">Вийти</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Баннер текущего режима: «Личный кабинет» / «Публичное поле» -->
+  <div class="vault-banner" id="vaultBanner" data-i18n="vault.banner_public">
+    🌐 Публичное поле
+  </div>
+
+  <div class="main">
+
+    <!-- Auth Page — первый экран (авторизация Telegram через Grammers MTProto) -->
+    <div id="authPage">
+      <div class="auth-card">
+        <h2 data-i18n="auth.title">🔑 Авторизація Telegram</h2>
+
+        <!-- Status text -->
+        <div class="auth-status" id="authPageStatus"></div>
+
+        <!-- Error text -->
+        <div class="auth-error" id="authPageError"></div>
+
+        <!-- BUG-WHITESCREEN-001: Loading overlay — видим по умолчанию, скрывается JS -->
+        <div id="authLoadingOverlay" style="text-align:center; padding:20px 0;">
+          <div class="spinner" style="width:36px; height:36px; border:3px solid var(--glass-border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px;"></div>
+          <p style="font-size:13px; color:var(--text-dim);" data-i18n="main.loading">Завантаження...</p>
+        </div>
+
+        <!-- FIRST-RUN PAIR-ПАНЕЛЬ УДАЛЕНА (2026-09-22, решение владельца).
+             Pair-кодов больше нет: api_id/api_hash выдаёт сервер
+             (POST /desktop/auth/credentials), после чего клиент сразу показывает
+             обычную авторизацию Telegram (телефон / QR / 2FA).
+             Ошибка выдачи кред рисуется в #authLoadingOverlay (main.ts). -->
+
+        <!-- ─── Step 0: Выбор способа авторизации (QR — основной) ─── -->
+        <div class="auth-step active" id="authPageStep0" style="display:none;">
+          <p style="font-size:13px; color:var(--text-dim); margin-bottom:16px; text-align:center;" data-i18n="auth.method_pick"></p>
+          <!-- QR — основной способ авторизации (входим без кода и без номера) -->
+          <button class="btn btn-primary auth-method-btn" id="authPageQrMethodBtn" data-i18n="auth.qr_method">
+            📷 Увійти за QR-кодом
+          </button>
+          <button class="btn btn-secondary auth-method-btn" id="authPagePhoneMethodBtn" style="margin-top:8px;" data-i18n="auth.phone_method">
+            📱 Увійти за номером телефону
+          </button>
+        </div>
+
+        <!-- ─── Step 1: QR-код (авто-генерация) ─── -->
+        <div class="auth-step" id="authPageStepQr">
+          <div style="text-align:center; margin:12px 0;">
+            <div id="authPageQrPlaceholder" style="width:200px; height:200px; margin:0 auto; background:var(--surface2); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-dim);" data-i18n="auth.qr_generating">
+              ⏳ Генерація QR-коду...
+            </div>
+            <img id="authPageQrCodeImg" style="width:200px; height:200px; margin:0 auto; border-radius:12px; display:none;" />
+            <p style="font-size:11px; color:var(--text-dim); margin-top:8px; word-break:break-all;">
+              <span data-i18n="auth.qr_link_label">Посилання:</span> <a id="authPageQrLink" href="#" target="_blank" style="color:var(--accent);"></a>
+            </p>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn btn-secondary" id="authPageQrBackBtn" data-i18n="common.back">← Назад</button>
+            <button class="btn btn-ghost" id="authPageQrResetBtn" style="color:var(--error);" data-i18n="common.reset">Скинути</button>
+          </div>
+        </div>
+
+        <!-- ─── Step 2: Телефон ─── -->
+        <div class="auth-step" id="authPageStepPhone">
+          <label data-i18n="auth.phone_label">Номер телефону (з кодом країни)</label>
+          <input id="authPagePhone" type="tel" placeholder="+380501234567" />
+          <p style="font-size:11px; color:var(--text-dim); margin:6px 0 10px;" data-i18n="auth.phone_note"></p>
+          <button class="btn btn-primary" id="authPageRequestCodeBtn" data-i18n="auth.get_code">⚡ Увійти за номером</button>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn btn-secondary" id="authPagePhoneBackBtn" data-i18n="common.back">← Назад</button>
+            <button class="btn btn-ghost" id="authPagePhoneResetBtn" style="color:var(--error);" data-i18n="common.reset">Скинути</button>
+          </div>
+        </div>
+
+        <!-- TDLib may request an email address for native account authorization. -->
+        <div class="auth-step" id="authPageStepEmailAddress">
+          <label data-i18n="auth.email_label">Email address</label>
+          <input id="authPageEmail" type="email" autocomplete="email" />
+          <button class="btn btn-primary" id="authPageSetEmailBtn" data-i18n="auth.email_continue">Continue</button>
+          <button class="btn btn-ghost" id="authPageEmailResetBtn" style="color:var(--error);" data-i18n="common.reset">Reset</button>
+        </div>
+
+        <div class="auth-step" id="authPageStepEmailCode">
+          <p style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">
+            <span data-i18n="auth.email_code_sent">Code sent to</span>
+            <strong id="authPageEmailDisplay" style="color:var(--accent);"></strong>
+          </p>
+          <label data-i18n="auth.email_code_label">Email confirmation code</label>
+          <input id="authPageEmailCode" type="text" inputmode="numeric" autocomplete="one-time-code" />
+          <button class="btn btn-primary" id="authPageCheckEmailCodeBtn" data-i18n="auth.confirm">Confirm</button>
+          <button class="btn btn-secondary" id="authPageEmailCodeQrBtn" data-i18n="auth.qr_from_code">Sign in with QR</button>
+          <button class="btn btn-ghost" id="authPageEmailCodeResetBtn" style="color:var(--error);" data-i18n="common.reset">Reset</button>
+        </div>
+
+        <!-- ─── Step 3: Code ─── -->
+        <div class="auth-step" id="authPageStepCode">
+          <p style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">
+            <span data-i18n="auth.code_sent_to">Код відправлено на</span> <strong id="authPagePhoneDisplay" style="color:var(--accent);"></strong>
+          </p>
+          <p id="authPageCodeDeliveryInfo" style="font-size:11px; color:var(--text-dim); margin-bottom:8px; display:none;"></p>
+          <label data-i18n="auth.code_label">Код підтвердження</label>
+          <input id="authPageCode" type="text" inputmode="numeric" placeholder="12345" />
+          <button class="btn btn-primary" id="authPageCheckCodeBtn" data-i18n="auth.confirm">Підтвердити</button>
+          <button class="btn btn-secondary" id="authPageResendCodeBtn" style="display:none;" data-i18n="auth.resend">🔄 Відправити код повторно</button>
+          <!-- BUG-AUTH-CODE-005: канал доставки выбирает Telegram, а не клиент.
+               Кнопки «пусть придёт SMS» здесь нет намеренно: TDLib-метод
+               (reportAuthenticationCodeMissing) — «for official mobile applications
+               only» и с параметром mobile_network_code; из стороннего клиента он
+               не даёт SMS. Гарантированный выход — QR-вход ниже. -->
+          <button class="btn btn-secondary" id="authPageCodeQrBtn" style="display:none;" data-i18n="auth.qr_from_code">📷 Увійти за QR-кодом</button>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn btn-secondary" id="authPageCodeBackBtn" data-i18n="common.back">← Назад</button>
+            <button class="btn btn-ghost" id="authPageCodeResetBtn" style="color:var(--error);" data-i18n="common.reset">Скинути</button>
+          </div>
+        </div>
+
+        <!-- ─── Step 4: 2FA Password ─── -->
+        <div class="auth-step" id="authPageStepPassword">
+          <p style="font-size:12px; color:var(--text-dim); margin-bottom:8px;" data-i18n="auth.password_intro">
+            Обліковий запис вимагає двофакторної автентифікації.
+          </p>
+          <label data-i18n="auth.password_label">Пароль 2FA</label>
+          <input id="authPagePassword" type="password" placeholder="Введіть пароль" data-i18n-placeholder="auth.password_placeholder" />
+          <button class="btn btn-primary" id="authPageCheckPasswordBtn" data-i18n="auth.enter">Увійти</button>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn btn-secondary" id="authPagePasswordBackBtn" data-i18n="common.back">← Назад</button>
+            <button class="btn btn-ghost" id="authPagePasswordResetBtn" style="color:var(--error);" data-i18n="common.reset">Скинути</button>
+          </div>
+        </div>
+
+        <div class="auth-footer" data-i18n="auth.footer">
+          Ваші дані авторизації зберігаються локально на цьому комп'ютері. Номер телефону та код ніколи не передаються на сервер проекту.
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Section -->
+    <div id="mainSection">
+      <div class="tabs">
+        <button class="tab active" data-tab="upload">
+          <img src="/tab-upload-3d.png" alt="" class="tab-icon-3d" />
+          <span class="tab-label" data-i18n="tabs.upload">Завантажити</span>
+        </button>
+        <button class="tab" data-tab="search">
+          <img src="/tab-search-3d.png" alt="" class="tab-icon-3d" />
+          <span class="tab-label" data-i18n="tabs.search">Пошук</span>
+        </button>
+        <button class="tab" data-tab="download">
+          <img src="/tab-download-3d.png" alt="" class="tab-icon-3d" />
+          <span class="tab-label" data-i18n="tabs.download">Скачати</span>
+        </button>
+        <!-- Archiver (Фаза 3): ручная упаковка/распаковка ЛОКАЛЬНЫХ архивов,
+             без облака и баллов. Контейнеры те же, что при upload/download:
+             tar.zst (по умолчанию) и ZIP. -->
+        <button class="tab" data-tab="archiver" id="archiverTabBtn">
+          <img src="/tab-archiver-3d.png" alt="" class="tab-icon-3d" />
+          <span class="tab-label" data-i18n="tabs.archiver">Архіватор</span>
+        </button>
+        <button class="tab" data-tab="community"><img src="/tab-community-3d.png" alt="" class="tab-icon-3d chat-tab-icon" aria-hidden="true" /><span class="chat-tab-unread" aria-live="polite" hidden></span><span class="tab-label" data-i18n="community.chats">Чати</span></button>
+        <!-- Інструменти (GEO Unlock): локальні правки дампів Samsung (eeprom) і
+             LG (NVM) — без хмари. Іконка вкладки — той самий 3D-матеріал, що в
+             інших (public/tab-tools-3d.png), іконка інструмента — geo-unlock-3d.png. -->
+        <button class="tab" data-tab="tools" id="toolsTabBtn">
+          <img src="/tab-tools-3d.png" alt="" class="tab-icon-3d" />
+          <span class="tab-label" data-i18n="tabs.tools">Інструменти</span>
+        </button>
+        <button class="tab" data-tab="billing">
+          <img src="/tab-shop-3d.png" alt="" class="tab-icon-3d" />
+          <span class="tab-label" data-i18n="tabs.billing">Магазин</span>
+        </button>
+        <!-- FAQ (справка клиента): публичный /api/v1/faq, доступна всем -->
+        <button class="tab" data-tab="faq" id="faqTabBtn">
+          <img src="/tab-faq-3d.png" alt="" class="tab-icon-3d" />
+          <span class="tab-label" data-i18n="tabs.faq">FAQ</span>
+        </button>
+        <button class="tab" data-tab="settings"><img src="/tab-settings-3d.png" alt="" class="tab-icon-3d" /><span class="tab-label" data-i18n="settings.title">Налаштування</span></button>
+        <!-- Owner-backdoor (T6.4): только владелец; скрыта через #ownerTabBtn.
+             Иконка — тот же 3D-материал, что у остальных вкладок
+             (public/tab-owner-3d.png, scripts/generate-tab-icons.py → group_owner). -->
+        <button class="tab" data-tab="owner" id="ownerTabBtn" style="display:none;">
+          <img src="/tab-owner-3d.png" alt="" class="tab-icon-3d" />
+          <span class="tab-label" data-i18n="tabs.owner">Владелец</span>
+        </button>
+      </div>
+
+      <!-- Upload Tab -->
+      <div class="tab-content active" id="tab-upload">
+        <div class="card">
+          <div class="card-title" data-i18n="upload.card_title">Вибір файлу або папки</div>
+          <div style="display:flex; gap:14px; margin-bottom:20px; background: rgba(0,0,0,0.15); padding: 14px; border-radius: 14px; border: 1px solid var(--glass-border);">
+            <button class="btn btn-upload-file" id="selectFileBtn" style="flex: 1;">
+              <span data-i18n="upload.add_file">Вибрати файл</span>
+              <img src="/file-icon-3d.png" alt="" class="btn-icon-3d" />
+            </button>
+            <button class="btn btn-upload-folder" id="selectFolderBtn" style="flex: 1;">
+              <img src="/folder-icon-3d.png" alt="" class="btn-icon-3d" />
+              <span data-i18n="upload.add_folder">Вибрати папку</span>
+            </button>
+          </div>
+
+          <!-- Динамічні поля форми (рендеряться UploadPage зі схеми сервера) -->
+          <div id="uploadFieldContainer"></div>
+
+          <!-- Кнопка очистки ВСІХ полів карточки одним кліком (B1, 2026-09-23).
+               Не пересоздаёт форму: сбрасывает значения элементов fieldElements
+               in-place (i18n-правило «форма не пересоздаётся»). -->
+          <div style="display:flex; justify-content:flex-end; margin:6px 0 12px;">
+            <button class="btn btn-sm" id="clearUploadFieldsBtn" data-i18n="upload.clear_fields"
+                    style="font-size:12px; padding:8px 16px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.2); color:var(--text-dim); cursor:pointer;">
+              🧹 Очистити поля
+            </button>
+          </div>
+
+          <div class="file-info" id="uploadFileInfo" style="display:none;">
+            <div><span class="label" data-i18n="upload.path_label">Шлях:</span> <span class="value" id="uploadPath"></span></div>
+            <div><span class="label" data-i18n="upload.size_label">Розмір:</span> <span class="value" id="uploadSize"></span></div>
+            <div><span class="label" data-i18n="upload.type_label">Тип:</span> <span class="value" id="uploadType"></span></div>
+          </div>
+
+          <!-- ── Фаза 3: контейнер архива (default tar.zst — скорость/размер).
+               Сжатие ОБЯЗАТЕЛЬНО для сырья (чекбокс «Сжать перед отправкой»
+               удалён решением владельца, BUG-SMART-SINGLE-UPLOAD-001):
+               строка видна, когда пакуем сами — папка/мультифайл или сырой
+               single (UploadPage._refreshPackingUI).
+               Значение пишется в манифест как `container` и уходит в
+               pack_archive; выбор переживает перезапуск (localStorage). -->
+          <div id="uploadContainerRow" style="display:none; align-items:center; gap:10px; margin:8px 0 6px; font-size:13px; flex-wrap:wrap;">
+            <span id="uploadContainerLabel" data-i18n="upload.container_label">Контейнер:</span>
+            <label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+              <input type="radio" name="uploadContainer" id="uploadContainerTarZst" value="tar_zst" checked style="accent-color:var(--accent);" />
+              <span data-i18n="upload.container_tar_zst">Zstandard (.tar.zst) — Ультраскорость для дампов. Авто-распаковка программой при скачивании.</span>
+            </label>
+            <label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+              <input type="radio" name="uploadContainer" id="uploadContainerZip" value="zip" style="accent-color:var(--accent);" />
+              <span data-i18n="upload.container_zip">ZIP (.zip) — Медленный стандарт.</span>
+            </label>
+          </div>
+
+          <!-- D-182 / BUG-CABINET-VAULT-SHA-MISMATCH-001: «не пакувати» — ТОЛЬКО
+               личное хранилище (публичный каталог пакует всегда). Пакуем по
+               умолчанию, выбор запоминается (localStorage fw_upload_skip_packing);
+               строка видна только для СЫРЬЯ в личном режиме
+               (UploadPage._refreshSkipPackingRow). -->
+          <div id="uploadSkipPackingRow" style="display:none; align-items:center; gap:10px; margin:2px 0 6px; font-size:13px; flex-wrap:wrap;">
+            <label style="display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="checkbox" id="uploadSkipPacking" style="accent-color:var(--accent);" />
+              <span id="uploadSkipPackingLabel" data-i18n="upload.skip_packing">Не пакувати (заливаю як є) — лише особисте сховище</span>
+            </label>
+          </div>
+
+          <!-- ── Стратегия загрузки: TDLib JSON FFI ── -->
+          <div id="uploadModeSection" style="margin-top:8px;">
+            <div style="font-size:11px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;" data-i18n="upload.strategy_label">
+              📡 Стратегія завантаження
+            </div>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <!-- TDLib JSON FFI (единственная стратегия) -->
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; padding:6px 12px; border-radius:6px; border:1px solid rgba(var(--ov-rgb), 0.082); background:var(--surface2); transition:all 0.2s;" id="strategyTdlibJsonLabel">
+                <input type="radio" name="uploadStrategy" value="tdlib_json" id="strategyTdlibJson" checked style="accent-color:var(--accent);">
+                🔷 TDLib JSON FFI
+              </label>
+            </div>
+
+            <!-- ── Bot API статус (только для Bot API стратегии) ── -->
+            <div id="botapiStatusBlock" style="margin-top:8px;">
+              <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                <!-- Статус TDLib Local Bot API -->
+                <span id="tdlibStatus" style="font-size:12px; color:var(--text-dim); display:inline;">
+                  <span id="tdlibDot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--text-dim); margin-right:4px;"></span>
+                  <span id="tdlibStatusText">Перевірка Local Bot API...</span>
+                </span>
+              </div>
+              <!-- Предупреждение, если TDLib недоступен -->
+              <div id="tdlibUnavailableWarning" style="display:none; margin-top:6px; padding:8px 10px; border-radius:6px; font-size:12px; background:#ff525215; border:1px solid #ff525230; color:var(--danger);">
+                <span data-i18n="upload.bot_api_unavailable">⚠️ Local Bot API недоступний. Завантаження через Bot API неможливе.</span>
+                <span id="tdlibInstallLink" style="color:var(--accent); cursor:pointer; text-decoration:underline;" data-i18n="upload.how_to_setup" data-i18n-title="upload.how_to_setup_title" title="Перевірити, чи запущений telegram-bot-api на порту 8081">Як налаштувати?</span>
+              </div>
+  
+              <!-- ── TDLib JSON FFI статус (только для TDLib JSON FFI стратегії) ── -->
+              <div id="tdlibJsonStatusBlock" style="margin-top:8px; display:none;">
+                <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                  <span id="tdlibJsonStatus" style="font-size:12px; color:var(--text-dim); display:inline;">
+                    <span id="tdlibJsonDot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--text-dim); margin-right:4px;"></span>
+                    <span id="tdlibJsonStatusText">Перевірка TDLib JSON FFI...</span>
+                  </span>
+                </div>
+                <div id="tdlibJsonUnavailableWarning" style="display:none; margin-top:6px; padding:8px 10px; border-radius:6px; font-size:12px; background:#ff525215; border:1px solid #ff525230; color:var(--danger);" data-i18n="upload.tdlib_json_unavailable">
+                  ⚠️ TDLib JSON FFI недоступний. Завантаження через TDLib JSON FFI неможливе.
+                </div>
+              </div>
+
+              <!-- 🧹 Очистка кеша TDLib (для тестирования) -->
+              <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+                <button class="btn btn-sm" id="clearTdlibCacheBtn" style="font-size:11px; padding:4px 12px; background:var(--surface2); border:1px solid rgba(var(--ov-rgb), 0.125); border-radius:4px; color:var(--text-dim); cursor:pointer;">
+                  <span data-i18n="upload.clear_cache">🧹 Очистити кеш TDLib</span>
+                </button>
+                <span id="clearCacheResult" style="font-size:11px; color:var(--text-dim);"></span>
+              </div>
+
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn-action-3d" id="startUploadBtn" disabled>
+              <img src="/btn-rocket-3d.png" alt="" class="btn-action-icon" />
+              <span data-i18n="upload.start">Почати завантаження</span>
+            </button>
+            <button class="btn btn-danger" id="cancelUploadBtn" style="display:none;">
+              <span data-i18n="common.cancel">⛔ Скасувати</span>
+            </button>
+          </div>
+          <div class="progress-container" id="uploadProgress" style="display:none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="uploadProgressFill"></div>
+            </div>
+            <div class="progress-info">
+              <span id="uploadProgressText">0%</span>
+              <span class="progress-eta" id="uploadProgressEta"></span>
+            </div>
+          </div>
+          <div class="log" id="uploadLog"></div>
+
+          <!-- ── Медиа карточки загружаемого файла (SP-15 срез 3b, D-069 v4).
+               «Инструмент в описании файла»: форма загрузки — это и есть описание,
+               поэтому фото можно выбрать СРАЗУ (видно превью и лимит), а в тему карточки
+               они уходят автоматически, когда карточка родится на /complete
+               (UploadPage._showCardMedia() → uploadedCardRef()). -->
+          <div id="uploadMediaPanel" class="upload-media-panel"></div>
+        </div>
+      </div>
+
+      <!-- Search Tab -->
+      <div class="tab-content" id="tab-search">
+        <div class="card">
+          <div class="card-title" data-i18n="search.card_title">🔍 Пошук файлів</div>
+          <p style="font-size:13px; color:var(--text-dim); margin-bottom:12px;" data-i18n="search.hint">
+            Пошук за назвою бренду, моделі, версії або описом прошивки.
+          </p>
+          <p style="font-size:12px; color:var(--text-dim); margin-bottom:12px;" data-i18n="brand.section_ctx">
+            TV &amp; electronics dumps, schemes, repair tips
+          </p>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="searchQuery" placeholder="Samsung, UE55NU7100, T-MSMDEUC... або ID512"
+              data-i18n-placeholder="search.placeholder"
+              style="flex:1; padding:12px 16px; border-radius:12px; border:1px solid var(--glass-border);
+              background:rgba(0,0,0,0.2); color:var(--text); font-size:14px; outline:none;" />
+            <button class="btn-action-3d" id="searchBtn">
+              <img src="/tab-search-3d.png" alt="" class="btn-action-icon" />
+              <span data-i18n="search.button">Знайти</span>
+            </button>
+          </div>
+          <div class="search-id-row">
+            <label for="searchFileId" data-i18n="search.file_id">ID файлу</label>
+            <input type="text" inputmode="numeric" id="searchFileId" placeholder="65 / #65 / ID65" maxlength="32" />
+            <button type="button" class="btn" id="searchFileIdBtn" data-i18n="search.id_button">Знайти за ID</button>
+          </div>
+          <!-- «Весь каталог» (A3): вход в дерево публичного каталога (kind → brand → model).
+               Паритет пустого ввода: тот же browse-режим, но явной кнопкой. -->
+          <div style="margin-top:8px;">
+            <button class="btn" id="searchAllCatalogBtn" data-i18n="search.all_catalog">📂 Весь каталог</button>
+          </div>
+          <div class="search-status" id="searchStatus" style="margin-top:8px; font-size:13px;"></div>
+          <!-- Гибридный старт из поиска: чип активной передачи (клик → вкладка передачи) -->
+          <button class="btn" id="searchTransferChip" style="display:none; margin-top:8px; font-size:13px; border-color:var(--accent); color:var(--accent);">⏳ Идёт передача — открыть</button>
+          <!-- Хлебные крошки дерева каталога (A3, «Весь каталог»): корень → kind → brand → model -->
+          <div class="tree-crumbs" id="searchCrumbs" style="display:none; margin-top:12px;"></div>
+          <!-- Фасетный каталог (Phase 3): панель фильтров слева + результаты справа -->
+          <div style="display:flex; gap:14px; margin-top:12px; align-items:flex-start;">
+            <div id="searchFacets" style="flex:0 0 250px; display:none;"></div>
+            <div id="searchResults" style="flex:1; min-width:0;"></div>
+          </div>
+          <div class="log" id="searchLog" style="max-height:120px;"></div>
+        </div>
+      </div>
+
+      <!-- Download Tab -->
+      <div class="tab-content" id="tab-download">
+        <div class="card">
+          <div class="card-title" data-i18n="download.card_title">📥 Скачування файлу</div>
+          <p style="font-size:13px; color:var(--text-dim); margin-bottom:12px;" data-i18n="download.hint">
+            Введіть ID файлу з пошуку.
+          </p>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="downloadFileId" placeholder="ID файлу..."
+              data-i18n-placeholder="download.placeholder"
+              style="flex:1; padding:12px 16px; border-radius:12px; border:1px solid var(--glass-border);
+              background:rgba(0,0,0,0.2); color:var(--text); font-size:14px; outline:none;" />
+            <button class="btn-action-3d" id="startDownloadBtn">
+              <img src="/tab-download-3d.png" alt="" class="btn-action-icon" />
+              <span data-i18n="common.download">Скачати</span>
+            </button>
+            <button class="btn btn-danger" id="cancelDownloadBtn" style="display:none;">
+              <span data-i18n="common.cancel">⛔ Скасувати</span>
+            </button>
+          </div>
+          <!-- Download mode indicator (shown during download) -->
+          <div class="file-info" id="downloadFileInfo" style="display:none; margin-top:12px;">
+            <div><span class="label" data-i18n="download.file_label">Файл:</span> <span class="value" id="downloadFileName"></span></div>
+            <div><span class="label" data-i18n="download.size_label">Розмір:</span> <span class="value" id="downloadFileSize"></span></div>
+            <div><span class="label" data-i18n="download.parts_label">Частин:</span> <span class="value" id="downloadPartsCount"></span></div>
+            <div><span class="label" data-i18n="download.price_label">Вартість:</span> <span class="value" id="downloadPrice"></span></div>
+          </div>
+          <!-- Host-Mediation PM-Lease (ADR 2026-09-06): подтверждение цены ДО start.
+               Показывается после выбора пути сохранения (если price.cost > 0). -->
+          <div id="downloadPriceConfirmPanel" style="display:none; margin-top:12px; padding:12px;
+               background:rgba(255,200,0,0.08); border:1px solid rgba(255,200,0,0.35); border-radius:12px;">
+            <div style="font-size:13px; margin-bottom:10px; color:var(--text);">
+              <span data-i18n="download.confirm_price">Скачування коштує</span>
+              <b id="downloadConfirmPriceText">0 ⭐</b>.
+              <span data-i18n="download.confirm_lease_hint">Після підтвердження бали списуються одразу; повторне скачування у межах лізингу — безкоштовно.</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-action-3d" id="downloadConfirmYesBtn" style="font-size:13px;">
+                ✅ <span data-i18n="download.confirm_yes">Скачати</span>
+              </button>
+              <button class="btn btn-danger" id="downloadConfirmNoBtn" style="font-size:13px;">
+                <span data-i18n="download.confirm_no">Скасувати</span>
+              </button>
+            </div>
+          </div>
+          <!-- Retry (после обрыва после start): повторный start того же id бесплатно
+               в пределах lease — БЕЗ сообщений об auto-refund. -->
+          <div id="downloadRetryPanel" style="display:none; margin-top:12px; padding:12px;
+               background:rgba(80,180,255,0.08); border:1px solid rgba(80,180,255,0.35); border-radius:12px;">
+            <div style="font-size:13px; color:var(--text); margin-bottom:10px;">
+              <span data-i18n="download.retry_hint">Скачування перервано, але файл вже оплачено.</span>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn-action-3d" id="downloadRetryBtn" style="font-size:13px;">
+                🔄 <span data-i18n="download.retry_free">Повторити безкоштовно</span>
+              </button>
+              <span style="font-size:11px; color:var(--text-dim);" id="downloadRetryLeaseText"></span>
+            </div>
+          </div>
+          <!-- ⚙️ Download Strategy (TDLib Primary → Zero-Stitch Fallback) -->
+          <details id="downloadConfigPanel" style="margin-top:12px;">
+            <summary style="cursor:pointer; font-size:12px; color:var(--text-dim); padding:6px 0; user-select:none;">
+              ⚙️ Download strategy <span style="font-family:monospace; font-size:11px;">(TDLib → Zero-Stitch)</span>
+            </summary>
+            <div style="margin-top:8px; padding:12px; background:#0e0e0e; border-radius:8px; border:1px solid rgba(var(--ov-rgb), 0.063);">
+              <!-- TDLib JSON FFI (Primary) status -->
+              <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+                <span style="font-size:12px; color:var(--text-dim); min-width:90px;">FFI Runtime:</span>
+                <span id="tdlibFfiStatusDot" class="status-dot" style="width:10px;height:10px; background:var(--text-dim);"></span>
+                <span id="tdlibFfiStatusText" style="font-size:13px; font-family:monospace; color:var(--text-dim);">checking...</span>
+              </div>
+              <!-- TDLib Local Bot API status -->
+              <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+                <span style="font-size:12px; color:var(--text-dim); min-width:90px;">HTTP API:</span>
+                <span id="tdlibStatusDot" class="status-dot" style="width:10px;height:10px; background:var(--text-dim);"></span>
+                <span id="tdlibStatusText" style="font-size:13px; font-family:monospace; color:var(--text-dim);">checking...</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+                <span style="font-size:12px; color:var(--text-dim); min-width:90px;">Strategy:</span>
+                <span style="font-size:13px; font-family:monospace; color:var(--accent);">FFI → HTTP → Zero-Stitch</span>
+                <span style="font-size:10px; color:var(--text-dim);">3-level fallback</span>
+              </div>
+              <div style="font-size:10px; color:var(--text-dim); padding-left:90px; line-height:1.4;">
+                <span data-i18n="download.msg.diag_primary">TDLib JSON FFI (пряме з'єднання) як primary.</span>
+                <br><span data-i18n="download.msg.diag_fallback">При недоступності — TDLib Local Bot API → Zero-Stitch MTProto.</span>
+              </div>
+
+              <!-- 🧹 Очистка кеша TDLib -->
+              <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+                <button class="btn btn-sm" id="clearDownloadCacheBtn" style="font-size:11px; padding:4px 12px; background:var(--surface2); border:1px solid rgba(var(--ov-rgb), 0.125); border-radius:4px; color:var(--text-dim); cursor:pointer;">
+                  <span data-i18n="upload.clear_cache">🧹 Очистити кеш TDLib</span>
+                </button>
+                <span id="clearDownloadCacheResult" style="font-size:11px; color:var(--text-dim);"></span>
+              </div>
+            </div>
+          </details>
+
+          <!-- ── Keep-packed: «Оставить архивом» (default OFF, persist).
+               Показывается только для bundle: checked → архив остаётся на диске
+               + подсказка (Архиватор / Проводник / свой архиватор по формату).
+               i18n: только textContent/display, без пересоздания. -->
+          <div id="downloadKeepPackedRow" style="display:none; align-items:center; gap:8px; margin:8px 0 4px; font-size:13px;">
+            <input type="checkbox" id="downloadKeepPackedCheckbox" style="accent-color:var(--accent); width:16px; height:16px;" />
+            <label for="downloadKeepPackedCheckbox" id="downloadKeepPackedLabel" data-i18n="download.keep_packed_label">📦 Залишити архівом (не розпаковувати)</label>
+          </div>
+
+          <div class="progress-container" id="downloadProgress" style="display:none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="downloadProgressFill"></div>
+            </div>
+            <div class="progress-info">
+              <span id="downloadProgressText">0%</span>
+              <span class="progress-eta" id="downloadProgressEta"></span>
+            </div>
+          </div>
+          <div class="log" id="downloadLog"></div>
+          
+          <!-- 🔍 Debug Panel (сквозное логирование от фронтенда до DC) -->
+          <details id="debugPanel" style="margin-top:12px; display:none;">
+            <summary style="cursor:pointer; font-size:12px; color:var(--text-dim); padding:6px 0; user-select:none;">
+              🔍 Debug: <span id="debugTraceId" style="font-family:monospace; font-size:11px;"></span>
+            </summary>
+            <div id="debugContent" style="font-family:monospace; font-size:11px; line-height:1.5; max-height:400px; overflow-y:auto; background:#0a0a0a; border-radius:6px; padding:8px; margin-top:4px; white-space:pre-wrap; word-break:break-all;"></div>
+            <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+              <button id="debugTestFileIdBtn" class="btn btn-sm" style="font-size:11px; padding:4px 10px; background:var(--surface2); border:1px solid rgba(var(--ov-rgb), 0.125); border-radius:4px; color:var(--text-dim); cursor:pointer;">🧪 Test TDLib file_id</button>
+            </div>
+            <div id="debugTestFileIdResult" style="margin-top:4px; font-family:monospace; font-size:10px; color:var(--text-dim); line-height:1.4; max-height:200px; overflow-y:auto; white-space:pre-wrap; word-break:break-all;"></div>
+          </details>
+        </div>
+
+      </div>
+
+      <!-- Billing Tab (Monobank Shop) -->
+      <div class="tab-content" id="tab-billing">
+        <div class="card">
+          <div class="card-title" data-i18n="billing.card_title">🛒 Магазин балів</div>
+          <p style="font-size:13px; color:var(--text-dim); margin-bottom:16px;" data-i18n="billing.hint">
+            Поповніть баланс для скачування прошивок. Після оплати бали буде зараховано автоматично.
+          </p>
+          <div id="billingContainer"></div>
+        </div>
+      </div>
+
+            <!-- FAQ Tab (справка клиента; контент — публичный /api/v1/faq) -->
+      <div class="tab-content" id="tab-settings"><div class="card" id="settingsContainer"></div></div>
+      <div class="tab-content" id="tab-community"><div id="communityContainer"></div></div>
+      <div class="tab-content" id="tab-faq">
+        <div class="card">
+          <div class="card-title" data-i18n="faq.title">❓ Справка</div>
+          <div id="faqContainer"></div>
+        </div>
+      </div>
+
+      <!-- Archiver Tab (Фаза 3): ручная упаковка/распаковка локальных архивов -->
+      <div class="tab-content" id="tab-archiver">
+        <div id="archiveContainer">
+          <div class="card">
+            <div class="card-title" id="archivePackTitle">📦 Упакувати</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+              <button class="btn" id="archivePickFileBtn">Вибрати файл…</button>
+              <button class="btn" id="archivePickFolderBtn">Вибрати папку…</button>
+            </div>
+            <div style="font-size:13px; margin-bottom:10px; word-break:break-all;">
+              <span class="label" data-i18n="archive.path_label">Шлях:</span>
+              <span id="archiveSourcePath" style="color:var(--text-dim);">—</span>
+              <span id="archiveSourceInfo" style="color:var(--text-dim); margin-left:8px;"></span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; margin-bottom:12px;">
+              <span id="archiveContainerLabel">Контейнер:</span>
+              <label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+                <input type="radio" name="archiveContainer" id="archiveContainerTarZst" value="tar_zst" checked style="accent-color:var(--accent);" />
+                <span>tar.zst</span>
+              </label>
+              <label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+                <input type="radio" name="archiveContainer" id="archiveContainerZip" value="zip" style="accent-color:var(--accent);" />
+                <span>ZIP</span>
+              </label>
+              <span id="archiveLevelLabel" style="margin-left:8px;">Стиснення:</span>
+              <select id="archiveLevelSelect" style="background:rgba(0,0,0,0.25); color:var(--text); border:1px solid var(--glass-border); border-radius:8px; padding:4px 8px;">
+                <option value="1">Швидко</option>
+                <option value="3" selected>Баланс</option>
+                <option value="19">Максимум</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="archivePackBtn" disabled>Упакувати й зберегти…</button>
+          </div>
+
+          <div class="card" style="margin-top:14px;">
+            <div class="card-title" id="archiveUnpackTitle">🗜️ Розпакувати</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+              <button class="btn" id="archivePickArchiveBtn">Вибрати архів…</button>
+              <button class="btn" id="archivePickDestBtn">Куди розпакувати…</button>
+            </div>
+            <div style="font-size:13px; margin-bottom:6px; word-break:break-all;">
+              <span class="label" data-i18n="archive.archive_label">Архів:</span>
+              <span id="archiveArchivePath" style="color:var(--text-dim);">—</span>
+            </div>
+            <div style="font-size:13px; margin-bottom:12px; word-break:break-all;">
+              <span class="label" data-i18n="archive.dest_label">Куди:</span>
+              <span id="archiveDestPath" style="color:var(--text-dim);">—</span>
+            </div>
+            <button class="btn btn-primary" id="archiveUnpackBtn" disabled>Розпакувати</button>
+          </div>
+
+          <div class="progress-container" id="archiveProgress" style="display:none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="archiveProgressFill"></div>
+            </div>
+            <div class="progress-info">
+              <span id="archiveProgressText">0%</span>
+              <span class="progress-eta" id="archiveProgressEta"></span>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:14px;">
+            <div class="log" id="archiveLog" style="max-height:200px; overflow:auto;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Інструменти (GEO Unlock): локальні правки дампів.
+           Тариф вирішує main-процес (`classifySamsungDump`):
+             • дамп мікросхеми NVM 24C512 (рівно 64 КіБ) — безкоштовно;
+             • дамп розділу eMMC — тільки з grant'ом сервера (власнику без списання).
+           Уся робота з файлами — у main (electron/geo-unlock), рендерер лише
+           показує звіт і передає вибір майстра. -->
+      <div class="tab-content" id="tab-tools">
+        <div id="toolsContainer">
+          <!-- D-169: тулза = САМОДОСТАТОЧНЫЙ блок .tool-entry (тайл + рабочая область).
+               Паттерн для НОВЫХ тулз: скопировать секцию, подставить свою иконку/имя/
+               описание, внутрь .tool-workspace — свои details.tool-spoiler. JS для новой
+               тулзы НЕ нужен: ToolsPage вешает тогглы на ВСЕ .tool-tile по aria-controls.
+               Открыта максимум одна тулза — блоки никогда не перекрывают друг друга.
+               3D-иконка намекает «нажми на меня»: hover-подсветка + подъём, клик по
+               всему тайлу (крупная цель, клавиатура — Enter/Space, aria-expanded). -->
+          <section class="tool-entry" data-tool="geo-unlock">
+            <button type="button" class="tool-tile" id="toolTileGeoUnlock"
+                    aria-expanded="false" aria-controls="toolBodyGeoUnlock">
+              <img class="tool-tile-icon" src="/geo-unlock-3d.png" alt="" />
+              <span class="tool-tile-text">
+                <span class="tool-tile-name">GEO Unlock</span>
+                <span class="tool-tile-desc" data-i18n="tools.subtitle">Зміна регіону Samsung і LG — локально, файли нікуди не надсилаються.</span>
+              </span>
+              <span class="tool-tile-chevron" aria-hidden="true">▾</span>
+            </button>
+            <div class="tool-workspace" id="toolBodyGeoUnlock" hidden>
+              <!-- Два спільні правила (D-153): стосуються ОБОХ методів, тому стоять
+                   на вході в робочу область, перед спойлерами методів. -->
+              <div class="tool-rules">
+                <div>• <span data-i18n="tools.rules_one_tv">Один ТВ — свій файл: усередині серійний номер, MAC-адреса та ключі.</span></div>
+                <div>• <span data-i18n="tools.rules_keep_dump">Оригінальний файл НІКОЛИ не змінюється — патч завжди пишеться в новий файл. Злитий оригінал зберігайте: це ваш відкат.</span></div>
+              </div>
+
+          <!-- D-167: функционал метода — под спойлером: summary = название секции
+               через i18n, тело в .tool-spoiler-body, без атрибута open (стартуют
+               свёрнутыми даже внутри раскрытой тулзы). -->
+          <details class="tool-spoiler">
+            <summary data-i18n="tools.samsung_title">Samsung eeprom — код регіону</summary>
+            <div class="tool-spoiler-body">
+            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:12px;" data-i18n="tools.accepts">Тип дампа визначається сам: мікросхема NVM 24C512 (рівно 64 КіБ, ТВ 2016–2025, Tizen 2.4–9.0) — безкоштовно; дамп 2 МіБ із eMMC (Tizen-10, ТВ 2026 р.) — надається 3 безкоштовні патчі, далі за підпискою з пакетів магазину.</div>
+            <!-- Счётчик платних розблокувань (D-173). Цифру дає СЕРВЕР
+                 (`GET /desktop/tools/geo-unlock/status`), рендерер її не рахує:
+                 інакше витрина й видача розійшлися б. Запит іде при відкритті
+                 вкладки й після кожної видачі grant'а — це ЧИТАННЯ, розблокировка
+                 не списується. Поруч — безкоштовний шлях (вимога власника:
+                 майстер має бачити, що NVM Tizen до 2026 не потребує пакета). -->
+            <div class="tool-unlocks" style="display:flex; flex-wrap:wrap; gap:6px 14px; align-items:baseline; font-size:12.5px; line-height:1.5; margin-bottom:12px;">
+              <span id="geoUnlocksLeft" style="color:var(--accent); font-weight:600;">⏳ …</span>
+              <span style="color:var(--text-dim);" data-i18n="tools.free_nvm_note">Мікросхема NVM (Tizen до 2026) — безкоштовно: пакет не потрібен, обмежень немає.</span>
+            </div>
+            <!-- Два методи Samsung за поколіннями (D-154): старі моделі — мікросхема 24C512,
+                 нові — дамп 2 МіБ із eMMC. Порядок «старі → нові» тримає гейт T9, щоб тексти
+                 знову не злилися в один абзац. Панель кнопок нижче — спільна: тип дампа
+                 визначає main-процес за вмістом файлу. -->
+            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:4px;"><b data-i18n="tools.samsung_old_title">Старі моделі 2016–2025 (Tizen 2.4–9.0) — мікросхема NVM 24C512 (64 КіБ)</b></div>
+            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:10px;" data-i18n="tools.samsung_old_howto">Зняти мікросхему програматором (кліпса SOIC-8) — файл рівно 64 КіБ → «Перевірити без запису» → «Пропатчити й зберегти…» → залити назад у мікросхему. Байт регіону 0x3E65 = 02 правиться, а контрольна сума перераховується, якщо вона є в дампі. Безкоштовно.</div>
+            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:4px;"><b data-i18n="tools.samsung_new_title">Нові моделі (Tizen-10, ТВ 2026 р. і новіші) — дамп 2 МіБ із eMMC</b></div>
+            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:6px;" data-i18n="tools.samsung_source">Що знімати: 2 МіБ із eMMC = 0x200000. Порядок: зняти 2 МіБ за потрібним офсетом → патч → залити назад за тим самим офсетом. Орієнтир за об’ємом чипа: 8 ГБ — 0x1D1328000, 16 ГБ — 0x3A3010000 - розділи з ім'ям NONE.</div>
+            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:12px;" data-i18n="tools.samsung_howto">«Перевірити без запису» покаже, що знайдено → «Пропатчити й зберегти…». Байт регіону правиться в УСІХ копіях, контрольні суми перераховуються. Надається 3 безкоштовні патчі, далі за підпискою з пакетів магазину.</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+              <button class="btn" id="geoPickSamsungBtn" data-i18n="tools.pick_dump">Вибрати дамп…</button>
+              <button class="btn" id="geoCheckSamsungBtn" disabled data-i18n="tools.check">Перевірити без запису</button>
+              <button class="btn btn-primary" id="geoPatchSamsungBtn" disabled data-i18n="tools.patch">Пропатчити й зберегти…</button>
+            </div>
+            <div style="font-size:13px; margin-bottom:8px; word-break:break-all;">
+              <span class="label" data-i18n="tools.dump_label">Дамп:</span>
+              <span id="geoSamsungPath" style="color:var(--text-dim);" data-i18n="tools.not_selected">не вибрано</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; margin-bottom:10px;">
+              <span data-i18n="tools.region_label">Код регіону (hex):</span>
+              <input id="geoRegionInput" type="text" value="02" maxlength="2" spellcheck="false"
+                     style="width:64px; background:rgba(0,0,0,0.25); color:var(--text); border:1px solid var(--glass-border); border-radius:8px; padding:4px 8px; text-align:center; font-family:monospace;" />
+              <span id="geoTierBadge" style="margin-left:auto; font-size:12px; color:var(--text-dim);"></span>
+            </div>
+            <div class="log" id="geoSamsungLog" style="max-height:200px; overflow:auto;"></div>
+            </div>
+          </details>
+
+          <details class="tool-spoiler">
+            <summary data-i18n="tools.lg_title">LG NVM (Area Option)</summary>
+            <div class="tool-spoiler-body">
+            <!-- Інструкція методу LG (D-153): розмір дампа й порядок дій — у СВОЇЙ
+                 секції, без домішування Samsung-тексту. Формула упаковки та
+                 адреси-кандидати з UI прибрані (D-167) — адреса шукається автоматично. -->
+            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:6px;" data-i18n="tools.lg_source">Що зливати: EEPROM 24C256 — 32 КіБ. Area Option — упаковане значення. Адреса в різних поколіннях різна — інструмент шукає її сам.</div>
+            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:12px;" data-i18n="tools.lg_howto">Порядок: злити 32 КіБ → «Перевірити дамп» → вписати нове значення → «Застосувати…» → залити назад. Регіони: 3122 = EU (Польща), 3640/3642 = CIS (Росія, Білорусь, Україна).</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+              <button class="btn" id="geoPickLgBtn" data-i18n="tools.pick_dump">Вибрати дамп…</button>
+              <button class="btn" id="geoScanLgBtn" disabled data-i18n="tools.lg_scan">Перевірити дамп</button>
+              <button class="btn btn-primary" id="geoPatchLgBtn" disabled data-i18n="tools.lg_apply">Застосувати…</button>
+            </div>
+            <div style="font-size:13px; margin-bottom:8px; word-break:break-all;">
+              <span class="label" data-i18n="tools.dump_label">Дамп:</span>
+              <span id="geoLgPath" style="color:var(--text-dim);" data-i18n="tools.not_selected">не вибрано</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; margin-bottom:10px;">
+              <span data-i18n="tools.lg_value_label">Нове значення Area Option:</span>
+              <!-- Поле стартує ПОРОЖНІМ (D-154): раніше в ньому стояв 0 — а 0 це
+                   справжній регіон (NORDIC), не «порожньо». Запис іде лише коли
+                   значення введене вручну; «Застосувати…» доти заблокована. -->
+              <input id="geoLgValueInput" type="text" maxlength="6" spellcheck="false"
+                     data-i18n-placeholder="tools.lg_value_hint" placeholder="3640 або 0x0E38"
+                     style="width:88px; background:rgba(0,0,0,0.25); color:var(--text); border:1px solid var(--glass-border); border-radius:8px; padding:4px 8px; text-align:center; font-family:monospace;" />
+            </div>
+            <div class="log" id="geoLgLog" style="max-height:180px; overflow:auto;"></div>
+            </div>
+          </details>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Owner-backdoor Tab (T6.4, только владелец) -->
+      <div class="tab-content" id="tab-owner">
+        <div id="ownerContainer"></div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- Toast-контейнер для всплывающих уведомлений (billing, ошибки, etc.) -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

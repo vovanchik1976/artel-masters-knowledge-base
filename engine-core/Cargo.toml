@@ -1,0 +1,40 @@
+[package]
+name = "engine-core"
+version = "0.0.1"
+edition = "2021"
+# MSRV-пин под Win7/8: 1.77.2 — последняя rustc до поднятия baseline до Windows 10
+# (см. rust-toolchain.toml). Проверка импортов — scripts/build-win-bundle.sh.
+# ВАЖНО: resolver = "3" (MSRV-aware подбор зависимостей) здесь НЕДОСТУПЕН —
+# cargo 1.77.2 знает только "1"/"2". Поэтому версии зависимостей зафиксированы
+# в Cargo.lock (format v3) и подобраны совместимыми с 1.77.2.
+rust-version = "1.77.2"
+description = "Автономный Rust-sidecar для Electron Win7/8 порта FW CLOUD. Framed stdio JSON-RPC. Без Tauri/WebView."
+build = "build.rs"
+# Хотим маленький бинарь; оптимизация важна позже (SHA-256 hot loop).
+[profile.release]
+opt-level = 3
+lto = "thin"
+
+[[bin]]
+name = "engine-core"
+path = "src/main.rs"
+
+[dependencies]
+# Чистое ядро mainline (archive/hash/scanner/manifest) — переносится без изменений.
+firmware-core = { path = "../firmware-core" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+hex = "0.4"
+anyhow = "1"
+walkdir = "2"
+
+[build-dependencies]
+pkg-config = "0.3"
+
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package."firmware-core"]
+opt-level = 3

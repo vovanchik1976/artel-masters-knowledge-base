@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": true,
+    "noEmit": true,
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@tauri-apps/api/core": ["tauri-polyfill/core.ts"],
+      "@tauri-apps/api/event": ["tauri-polyfill/event.ts"],
+      "@tauri-apps/plugin-dialog": ["tauri-polyfill/dialog.ts"],
+      "@tauri-apps/plugin-updater": ["tauri-polyfill/updater.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "tauri-polyfill/**/*.ts",
+    "shared/**/*.ts"
+  ],
+  "exclude": ["node_modules", "electron", "engine-core"]
+}

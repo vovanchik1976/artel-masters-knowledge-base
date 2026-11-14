@@ -1,0 +1,27 @@
+# ── Зависимости / сборка (артефакты не коммитим) ──────────────
+node_modules/
+dist-electron/
+dist-renderer/
+dist/
+engine-core/target/
+firmware-core/target/
+*.log
+tmp-tests/
+
+# ── electron-builder (десктоп-инсталляторы Win7/8) ────────────
+# win-bundle-<arch>/ — staging-каталоги engine-core.exe + runtime-DLL TDLib
+# (по одному на архитектуру), генерируются scripts/build-win-bundle.sh
+# перед electron-builder (extraResources берёт нужный через ${arch}).
+win-bundle/
+win-bundle-*/
+release/
+
+# ── Локальные секреты (как в mainline — .env только на машине) ─
+.env
+.env.local
+.env.development
+.env.production
+
+# ── Electron / ОС ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db

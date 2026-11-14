@@ -1,0 +1,8 @@
+prefix=/tmp/ossl/tdlib-install
+
+Name: tdjson
+Description: Telegram Library - JSON interface (shared)
+Version: 1.8.65
+
+CFlags: -I"${prefix}/include"
+Libs: -L"${prefix}/lib" -ltdjson

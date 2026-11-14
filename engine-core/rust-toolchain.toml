@@ -1,0 +1,11 @@
+# Пин тулчейна: Rust 1.77.2 — ПОСЛЕДНЯЯ версия до поднятия baseline до
+# Windows 10 (Rust 1.78 → std импортирует ProcessPrng из bcryptprimitives.dll и
+# WaitOnAddress из api-ms-win-core-synch-l1-2-0.dll → бинарь не стартует на
+# Win7/8, а это целевые ОС Electron-порта).
+# Не поднимать без пересмотра контракта порта! Проверка — scripts/build-win-bundle.sh
+# (гейт «Win8+/Win10-only импортов») + docs/WIN78_ELECTRON_PORT_MILESTONES.md.
+# Также фиксирует format Cargo.lock = v3 (cargo ≥1.78 пишет v4, который 1.77.2 не читает).
+[toolchain]
+channel = "1.77.2"
+profile = "minimal"
+targets = ["x86_64-unknown-linux-gnu", "i686-pc-windows-gnu", "x86_64-pc-windows-gnu"]

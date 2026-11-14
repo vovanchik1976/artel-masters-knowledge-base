@@ -1,0 +1,38 @@
+[package]
+name = "firmware-core"
+version = "0.3.0"
+description = "Portable firmware processing core — scan, hash, archive, split, manifest types"
+edition = "2021"
+
+[lib]
+name = "firmware_core"
+crate-type = ["lib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+hex = "0.4"
+anyhow = "1"
+walkdir = "2"
+rayon = "1"
+# ZIP (дефолт нативный для Windows/macOS/Linux). default-features off + deflate
+# (flate2/rust_backend — чистый Rust, без C-зависимостей bzip2/lzma/zstd/aes).
+zip = { version = "0.6", default-features = false, features = ["deflate"] }
+# ── Фаза 3: tar.zst — скоростной контейнер (BUG-SMART-SINGLE-UPLOAD-003) ────
+# tar 0.4 — чистый Rust; zstd 0.13 — C-библиотека zstd (zstd-sys, сборка через
+# cc/MinGW для windows-gnu — так же, как прочие C-части сайдикара). Гейт
+# Win7/8-импортов (`scripts/check-win7-imports.sh`) обязателен после изменений.
+tar = "0.4"
+zstd = "0.13"
+# ПИНЫ ТРАНЗИТИВНЫХ зависимостей под rustc 1.77.2 (MSRV-контракт Win7/8):
+# - jobserver 0.1.35 (зависимость cc, нужного zstd-sys) требует getrandom 0.4,
+#   а тот объявлен edition2024 — cargo 1.77.2 такой манифест не читает ВООБЩЕ
+#   (резолв падает до сборки). Держим 0.1.34 → getrandom 0.3.x (edition2021).
+# - zstd-safe/zstd-sys прибиты к версиям, собранным под 1.77.2 и закэшированным
+#   в CI/локально; 7.3.x уводит сборочный граф за пределы MSRV.
+# НЕ поднимать без пересмотра MSRV-контракта порта (см. rust-toolchain.toml).
+jobserver = "=0.1.34"
+zstd-safe = "=7.2.4"
+zstd-sys = "=2.0.16"
+thiserror = "1"
