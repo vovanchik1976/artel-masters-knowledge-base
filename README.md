@@ -46,4 +46,3 @@ TDLib-рантайм (`engine-core/tdlib/windows-{x64,x86}/*.dll`) включё�
 GPL-3.0-or-later. Полный текст — [LICENSE](LICENSE).
 
 Релизы подписываются кодовой подписью через
-[SignPath Foundation](https://signpath.org/) (программа для open source).
