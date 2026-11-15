@@ -2121,21 +2121,6 @@
     margin-bottom: 10px;
     text-align: center;
   }
-  /* GEO_Unlock — второй бонус пакета (D-158): тот же срок, что и у хранилища.
-     Цвет и форма берутся из ВЫБРАННОЙ темы (--accent/--r-badge), а не зашитым
-     голубым «стеклом ARTEL» (D-159): иначе на «Майстерні»/«Пульті» бейдж остался
-     бы пятном чужого стиля. Гейт: tests/billing-package-tool-bonus.test.ts → B6. */
-  .billing-card-tool {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--accent);
-    background: rgba(var(--accent-rgb), 0.12);
-    border: 1px solid rgba(var(--accent-rgb), 0.34);
-    border-radius: var(--r-badge, 8px);
-    padding: 4px 8px;
-    margin-bottom: 10px;
-    text-align: center;
-  }
 
   /* ── 3D Action Buttons (start upload, download, search) ───────── */
   .btn-action-3d {
@@ -2732,13 +2717,6 @@
           <span class="tab-label" data-i18n="tabs.archiver">Архіватор</span>
         </button>
         <button class="tab" data-tab="community"><img src="/tab-community-3d.png" alt="" class="tab-icon-3d chat-tab-icon" aria-hidden="true" /><span class="chat-tab-unread" aria-live="polite" hidden></span><span class="tab-label" data-i18n="community.chats">Чати</span></button>
-        <!-- Інструменти (GEO Unlock): локальні правки дампів Samsung (eeprom) і
-             LG (NVM) — без хмари. Іконка вкладки — той самий 3D-матеріал, що в
-             інших (public/tab-tools-3d.png), іконка інструмента — geo-unlock-3d.png. -->
-        <button class="tab" data-tab="tools" id="toolsTabBtn">
-          <img src="/tab-tools-3d.png" alt="" class="tab-icon-3d" />
-          <span class="tab-label" data-i18n="tabs.tools">Інструменти</span>
-        </button>
         <button class="tab" data-tab="billing">
           <img src="/tab-shop-3d.png" alt="" class="tab-icon-3d" />
           <span class="tab-label" data-i18n="tabs.billing">Магазин</span>
@@ -3165,118 +3143,6 @@
           <div class="card" style="margin-top:14px;">
             <div class="log" id="archiveLog" style="max-height:200px; overflow:auto;"></div>
           </div>
-        </div>
-      </div>
-
-      <!-- Інструменти (GEO Unlock): локальні правки дампів.
-           Тариф вирішує main-процес (`classifySamsungDump`):
-             • дамп мікросхеми NVM 24C512 (рівно 64 КіБ) — безкоштовно;
-             • дамп розділу eMMC — тільки з grant'ом сервера (власнику без списання).
-           Уся робота з файлами — у main (electron/geo-unlock), рендерер лише
-           показує звіт і передає вибір майстра. -->
-      <div class="tab-content" id="tab-tools">
-        <div id="toolsContainer">
-          <!-- D-169: тулза = САМОДОСТАТОЧНЫЙ блок .tool-entry (тайл + рабочая область).
-               Паттерн для НОВЫХ тулз: скопировать секцию, подставить свою иконку/имя/
-               описание, внутрь .tool-workspace — свои details.tool-spoiler. JS для новой
-               тулзы НЕ нужен: ToolsPage вешает тогглы на ВСЕ .tool-tile по aria-controls.
-               Открыта максимум одна тулза — блоки никогда не перекрывают друг друга.
-               3D-иконка намекает «нажми на меня»: hover-подсветка + подъём, клик по
-               всему тайлу (крупная цель, клавиатура — Enter/Space, aria-expanded). -->
-          <section class="tool-entry" data-tool="geo-unlock">
-            <button type="button" class="tool-tile" id="toolTileGeoUnlock"
-                    aria-expanded="false" aria-controls="toolBodyGeoUnlock">
-              <img class="tool-tile-icon" src="/geo-unlock-3d.png" alt="" />
-              <span class="tool-tile-text">
-                <span class="tool-tile-name">GEO Unlock</span>
-                <span class="tool-tile-desc" data-i18n="tools.subtitle">Зміна регіону Samsung і LG — локально, файли нікуди не надсилаються.</span>
-              </span>
-              <span class="tool-tile-chevron" aria-hidden="true">▾</span>
-            </button>
-            <div class="tool-workspace" id="toolBodyGeoUnlock" hidden>
-              <!-- Два спільні правила (D-153): стосуються ОБОХ методів, тому стоять
-                   на вході в робочу область, перед спойлерами методів. -->
-              <div class="tool-rules">
-                <div>• <span data-i18n="tools.rules_one_tv">Один ТВ — свій файл: усередині серійний номер, MAC-адреса та ключі.</span></div>
-                <div>• <span data-i18n="tools.rules_keep_dump">Оригінальний файл НІКОЛИ не змінюється — патч завжди пишеться в новий файл. Злитий оригінал зберігайте: це ваш відкат.</span></div>
-              </div>
-
-          <!-- D-167: функционал метода — под спойлером: summary = название секции
-               через i18n, тело в .tool-spoiler-body, без атрибута open (стартуют
-               свёрнутыми даже внутри раскрытой тулзы). -->
-          <details class="tool-spoiler">
-            <summary data-i18n="tools.samsung_title">Samsung eeprom — код регіону</summary>
-            <div class="tool-spoiler-body">
-            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:12px;" data-i18n="tools.accepts">Тип дампа визначається сам: мікросхема NVM 24C512 (рівно 64 КіБ, ТВ 2016–2025, Tizen 2.4–9.0) — безкоштовно; дамп 2 МіБ із eMMC (Tizen-10, ТВ 2026 р.) — надається 3 безкоштовні патчі, далі за підпискою з пакетів магазину.</div>
-            <!-- Счётчик платних розблокувань (D-173). Цифру дає СЕРВЕР
-                 (`GET /desktop/tools/geo-unlock/status`), рендерер її не рахує:
-                 інакше витрина й видача розійшлися б. Запит іде при відкритті
-                 вкладки й після кожної видачі grant'а — це ЧИТАННЯ, розблокировка
-                 не списується. Поруч — безкоштовний шлях (вимога власника:
-                 майстер має бачити, що NVM Tizen до 2026 не потребує пакета). -->
-            <div class="tool-unlocks" style="display:flex; flex-wrap:wrap; gap:6px 14px; align-items:baseline; font-size:12.5px; line-height:1.5; margin-bottom:12px;">
-              <span id="geoUnlocksLeft" style="color:var(--accent); font-weight:600;">⏳ …</span>
-              <span style="color:var(--text-dim);" data-i18n="tools.free_nvm_note">Мікросхема NVM (Tizen до 2026) — безкоштовно: пакет не потрібен, обмежень немає.</span>
-            </div>
-            <!-- Два методи Samsung за поколіннями (D-154): старі моделі — мікросхема 24C512,
-                 нові — дамп 2 МіБ із eMMC. Порядок «старі → нові» тримає гейт T9, щоб тексти
-                 знову не злилися в один абзац. Панель кнопок нижче — спільна: тип дампа
-                 визначає main-процес за вмістом файлу. -->
-            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:4px;"><b data-i18n="tools.samsung_old_title">Старі моделі 2016–2025 (Tizen 2.4–9.0) — мікросхема NVM 24C512 (64 КіБ)</b></div>
-            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:10px;" data-i18n="tools.samsung_old_howto">Зняти мікросхему програматором (кліпса SOIC-8) — файл рівно 64 КіБ → «Перевірити без запису» → «Пропатчити й зберегти…» → залити назад у мікросхему. Байт регіону 0x3E65 = 02 правиться, а контрольна сума перераховується, якщо вона є в дампі. Безкоштовно.</div>
-            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:4px;"><b data-i18n="tools.samsung_new_title">Нові моделі (Tizen-10, ТВ 2026 р. і новіші) — дамп 2 МіБ із eMMC</b></div>
-            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:6px;" data-i18n="tools.samsung_source">Що знімати: 2 МіБ із eMMC = 0x200000. Порядок: зняти 2 МіБ за потрібним офсетом → патч → залити назад за тим самим офсетом. Орієнтир за об’ємом чипа: 8 ГБ — 0x1D1328000, 16 ГБ — 0x3A3010000 - розділи з ім'ям NONE.</div>
-            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:12px;" data-i18n="tools.samsung_howto">«Перевірити без запису» покаже, що знайдено → «Пропатчити й зберегти…». Байт регіону правиться в УСІХ копіях, контрольні суми перераховуються. Надається 3 безкоштовні патчі, далі за підпискою з пакетів магазину.</div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
-              <button class="btn" id="geoPickSamsungBtn" data-i18n="tools.pick_dump">Вибрати дамп…</button>
-              <button class="btn" id="geoCheckSamsungBtn" disabled data-i18n="tools.check">Перевірити без запису</button>
-              <button class="btn btn-primary" id="geoPatchSamsungBtn" disabled data-i18n="tools.patch">Пропатчити й зберегти…</button>
-            </div>
-            <div style="font-size:13px; margin-bottom:8px; word-break:break-all;">
-              <span class="label" data-i18n="tools.dump_label">Дамп:</span>
-              <span id="geoSamsungPath" style="color:var(--text-dim);" data-i18n="tools.not_selected">не вибрано</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; margin-bottom:10px;">
-              <span data-i18n="tools.region_label">Код регіону (hex):</span>
-              <input id="geoRegionInput" type="text" value="02" maxlength="2" spellcheck="false"
-                     style="width:64px; background:rgba(0,0,0,0.25); color:var(--text); border:1px solid var(--glass-border); border-radius:8px; padding:4px 8px; text-align:center; font-family:monospace;" />
-              <span id="geoTierBadge" style="margin-left:auto; font-size:12px; color:var(--text-dim);"></span>
-            </div>
-            <div class="log" id="geoSamsungLog" style="max-height:200px; overflow:auto;"></div>
-            </div>
-          </details>
-
-          <details class="tool-spoiler">
-            <summary data-i18n="tools.lg_title">LG NVM (Area Option)</summary>
-            <div class="tool-spoiler-body">
-            <!-- Інструкція методу LG (D-153): розмір дампа й порядок дій — у СВОЇЙ
-                 секції, без домішування Samsung-тексту. Формула упаковки та
-                 адреси-кандидати з UI прибрані (D-167) — адреса шукається автоматично. -->
-            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:6px;" data-i18n="tools.lg_source">Що зливати: EEPROM 24C256 — 32 КіБ. Area Option — упаковане значення. Адреса в різних поколіннях різна — інструмент шукає її сам.</div>
-            <div style="font-size:12.5px; line-height:1.5; color:var(--text-dim); margin-bottom:12px;" data-i18n="tools.lg_howto">Порядок: злити 32 КіБ → «Перевірити дамп» → вписати нове значення → «Застосувати…» → залити назад. Регіони: 3122 = EU (Польща), 3640/3642 = CIS (Росія, Білорусь, Україна).</div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
-              <button class="btn" id="geoPickLgBtn" data-i18n="tools.pick_dump">Вибрати дамп…</button>
-              <button class="btn" id="geoScanLgBtn" disabled data-i18n="tools.lg_scan">Перевірити дамп</button>
-              <button class="btn btn-primary" id="geoPatchLgBtn" disabled data-i18n="tools.lg_apply">Застосувати…</button>
-            </div>
-            <div style="font-size:13px; margin-bottom:8px; word-break:break-all;">
-              <span class="label" data-i18n="tools.dump_label">Дамп:</span>
-              <span id="geoLgPath" style="color:var(--text-dim);" data-i18n="tools.not_selected">не вибрано</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; margin-bottom:10px;">
-              <span data-i18n="tools.lg_value_label">Нове значення Area Option:</span>
-              <!-- Поле стартує ПОРОЖНІМ (D-154): раніше в ньому стояв 0 — а 0 це
-                   справжній регіон (NORDIC), не «порожньо». Запис іде лише коли
-                   значення введене вручну; «Застосувати…» доти заблокована. -->
-              <input id="geoLgValueInput" type="text" maxlength="6" spellcheck="false"
-                     data-i18n-placeholder="tools.lg_value_hint" placeholder="3640 або 0x0E38"
-                     style="width:88px; background:rgba(0,0,0,0.25); color:var(--text); border:1px solid var(--glass-border); border-radius:8px; padding:4px 8px; text-align:center; font-family:monospace;" />
-            </div>
-            <div class="log" id="geoLgLog" style="max-height:180px; overflow:auto;"></div>
-            </div>
-          </details>
-            </div>
-          </section>
         </div>
       </div>
 

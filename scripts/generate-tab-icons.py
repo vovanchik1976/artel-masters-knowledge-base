@@ -296,110 +296,12 @@ def group_owner() -> str:
 
 # ── Інструменти: чип (корпус + ніжки + темне ядро) ────────────────────────────
 
-def chip_body() -> str:
-    """Силуэт чипа: корпус и ножки одним набором фигур (экструзия 1-в-1)."""
-    legs = "".join(
-        f'<rect x="-336" y="{y}" width="96" height="58" rx="26"/>'
-        f'<rect x="240" y="{y}" width="96" height="58" rx="26"/>'
-        for y in (-186, -58, 70, 198)
-    )
-    legs += "".join(
-        f'<rect x="{x}" y="-336" width="58" height="96" rx="26"/>'
-        f'<rect x="{x}" y="240" width="58" height="96" rx="26"/>'
-        for x in (-186, -58, 70, 198)
-    )
-    return legs + '<rect x="-256" y="-256" width="512" height="512" rx="96"/>'
-
-
-def group_tools() -> str:
-    return (
-        f'<g {back()} fill="url(#deep)">{chip_body()}</g>'
-        f'<g {front()} fill="url(#glass)">{chip_body()}</g>'
-        # світіння ядра у верхній частині корпусу (той самий прийом, що всюди)
-        f'<g {front()}><ellipse cx="-40" cy="-120" rx="190" ry="120" fill="url(#core)" opacity="0.7"/></g>'
-        # темне «ядро» чипа + оправа
-        f'<g {front()} fill="url(#deep)"><rect x="-104" y="-104" width="208" height="208" rx="44"/>'
-        '<circle cx="0" cy="0" r="34" fill="url(#hole)"/></g>'
-        f'<g {front()} fill="none">'
-        '<rect x="-104" y="-104" width="208" height="208" rx="44" stroke="url(#rim)" stroke-width="8" opacity="0.8"/>'
-        '<rect x="-256" y="-256" width="512" height="512" rx="96" stroke="url(#rim)" stroke-width="8" opacity="0.9"/></g>'
-        + gloss(-186, -212, 252, 52, 26)
-    )
-
-
-# ── GEO_Unlock: глобус + відкритий замок (іконка інструмента, не вкладки) ────
-#
-# Читається двома частинами: сітка меридіанів = «GEO» (регіон країни), замок із
-# піднятою дужкою = «UNLOCK». Матеріал той самий, що в усіх вкладок (скло cyan +
-# темна екструзія), тому іконка не випадає з ряду.
-
-GLOBE_R = 300
-LOCK_BODY = 'x="-124" y="-34" width="248" height="208" rx="50"'
-# Відкрита дужка: ліва нога впирається в корпус, права піднята й НЕ торкається
-# його — саме цей розрив читається як «відімкнено».
-SHACKLE_PATH = "M -60 -26 V -112 A 86 86 0 0 1 122 -84"
-# Свердловина ключа: круг + проріз (як у справжньому замку).
-KEYHOLE = '<circle cx="0" cy="46" r="35"/><rect x="-10" y="46" width="20" height="62" rx="10"/>'
-
-
-def globe_grid() -> str:
-    """Меридіани й паралелі глобуса — тонка темна сітка на склі."""
-    return "".join(
-        (
-            '<ellipse rx="300" ry="104"/>',  # екватор
-            '<ellipse rx="300" ry="196"/>',  # паралель
-            '<ellipse rx="110" ry="300"/>',  # меридіан
-            '<ellipse rx="196" ry="300"/>',  # меридіан
-        )
-    )
-
-
-def group_geo_unlock() -> str:
-    return (
-        # глобус: екструзія + скло
-        f'<g {back()} fill="url(#deep)"><circle r="{GLOBE_R}"/></g>'
-        f'<g {front()} fill="url(#glass)"><circle r="{GLOBE_R}"/></g>'
-        f'<g {front()} fill="none" stroke="{INK}" stroke-width="10" opacity="0.20">'
-        f"{globe_grid()}</g>"
-        # світіння верхньої частини кулі (єдиний прийом у всіх іконках)
-        f'<g {front()}><ellipse cx="-70" cy="-176" rx="168" ry="104" fill="url(#core)" opacity="0.5"/></g>'
-        # тінь-підкладка під замком: без неї темне тіло губиться на світлому склі
-        f'<g {front()}><ellipse cx="14" cy="86" rx="196" ry="176" fill="#08131f"'
-        ' opacity="0.45" filter="url(#soft)"/></g>'
-        # замок, екструзія: тіло + дужка (товща — щоб край не просвічував)
-        f'<g {back()}>'
-        f'<rect {LOCK_BODY} fill="url(#deep)"/>'
-        f'<path d="{SHACKLE_PATH}" fill="none" stroke="url(#deep)" stroke-width="42"'
-        ' stroke-linecap="round"/></g>'
-        # замок, лице: темний метал (контраст до скла глобуса) + дужка
-        f'<g {front()}>'
-        f'<rect {LOCK_BODY} fill="url(#deep)"/>'
-        f'<path d="{SHACKLE_PATH}" fill="none" stroke="url(#rim)" stroke-width="34"'
-        ' stroke-linecap="round"/></g>'
-        # металевий блик у верхній частині тіла — інакше замок виглядає плоским
-        f'<g {front()}><ellipse cx="-26" cy="-6" rx="88" ry="30" fill="url(#core)"'
-        ' opacity="0.34"/></g>'
-        # свердловина + оправи
-        f'<g {front()} fill="url(#hole)">{KEYHOLE}</g>'
-        f'<g {front()} fill="none">'
-        f'<rect {LOCK_BODY} stroke="url(#rim)" stroke-width="8" opacity="0.9"/>'
-        '<circle cx="0" cy="46" r="35" stroke="url(#rim)" stroke-width="6" opacity="0.55"/>'
-        f'<circle r="{GLOBE_R}" stroke="url(#rim)" stroke-width="9" opacity="0.85"/></g>'
-        # іскра на вільному кінці дужки — «замок щойно відкрили»
-        f'<g {front()}><circle cx="122" cy="-84" r="18" fill="#eafaff" opacity="0.85"'
-        ' filter="url(#soft)"/></g>'
-        + gloss(-88, -14, 176, 36, 18, 0.22)
-    )
-
-
 ICONS = {
     "tab-settings-3d": group_settings,
     "tab-community-3d": group_community,
     "tab-faq-3d": group_faq,
     "tab-archiver-3d": group_archiver,
     "tab-owner-3d": group_owner,
-    "tab-tools-3d": group_tools,
-    "geo-unlock-3d": group_geo_unlock,
 }
 
 

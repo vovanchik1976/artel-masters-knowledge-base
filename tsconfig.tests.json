@@ -16,7 +16,6 @@
     "tests/**/*.ts",
     "shared/updaterPolicy.ts",
     "electron/sidecar-manager.ts",
-    "electron/geo-unlock/**/*.ts",
     "src/beacon.ts",
     "src/ui/BeaconPolicy.ts",
     "src/ui/ThemePresets.ts",

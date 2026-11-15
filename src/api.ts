@@ -412,43 +412,6 @@ export async function withRetry<T>(
 
 // ── API Client ──
 
-/**
- * Ответ POST /desktop/tools/geo-unlock/grant (D-150, D-151).
- *
- * `kind` — тип выдачи: `owner` (владелец, без списания), `package` (действующий
- * пакет мастера — цена операции и есть срок пакета, баллы не списываются),
- * `trial` (бесплатная попытка), `paid` (зарезервировано: отдельной цены в баллах нет).
- */
-export interface GeoUnlockGrantResponse {
-  id: string;
-  kind: "owner" | "package" | "trial" | "paid";
-  tool: string;
-  /** Сколько бесплатных попыток осталось ПОСЛЕ этой выдачи. */
-  trial_left: number;
-  /** Действующий лимит бесплатных попыток (настройка админки). */
-  trial_limit: number;
-  /**
-   * Сколько разблокировок пакета осталось ПОСЛЕ этой операции (D-173).
-   * `null` — выдача не по пакету (owner/trial) либо пакет без ограничения.
-   */
-  package_unlocks_left: number | null;
-}
-
-/**
- * Ответ GET /desktop/tools/geo-unlock/status (D-173).
- *
- * `kind` — состояние доступа БЕЗ выдачи grant'а: `owner` (владелец),
- * `package` (действующий пакет утилиты), `trial` (остались бесплатные попытки),
- * `none` (инструмент закрыт: нужен пакет).
- */
-export interface GeoUnlockStatusResponse {
-  kind: "owner" | "package" | "trial" | "none";
-  /** Остаток разблокировок пакета; `null` — безлимит или это не пакет. */
-  unlocks_left: number | null;
-  trial_left: number;
-  trial_limit: number;
-  tool: string;
-}
 
 export class ApiClient {
   private baseUrl: string;
@@ -1364,33 +1327,6 @@ export class ApiClient {
     }
   }
 
-  // ── GEO_Unlock (D-150, счётчик — D-173): grant и остаток разблокировок ──
-
-  /**
-   * POST /desktop/tools/geo-unlock/grant — разрешение на платную операцию.
-   *
-   * Рендерер спрашивает grant ТОЛЬКО когда скан дампа вернул `needsGrant`
-   * (дамп раздела eMMC). Владельцу сервер отвечает `kind: "owner"` без
-   * списания, мастеру с пакетом — `kind: "package"` (каждая операция списывает
-   * одну разблокировку), остальным — ограниченное число пробных попыток; когда
-   * не осталось ничего — 402 «нужен пакет».
-   */
-  async geoUnlockGrant(tool: string = "samsung_p31"): Promise<GeoUnlockGrantResponse> {
-    return this.request<GeoUnlockGrantResponse>("POST", "/desktop/tools/geo-unlock/grant", {
-      tool,
-    });
-  }
-
-  /**
-   * GET /desktop/tools/geo-unlock/status — остаток разблокировок БЕЗ выдачи grant'а.
-   *
-   * Нужен для счётчика в карточке утилиты: спрашивать остаток через grant нельзя —
-   * выдача списывает разблокировку, то есть открытие вкладки стоило бы операции.
-   */
-  async geoUnlockStatus(): Promise<GeoUnlockStatusResponse> {
-    return this.request<GeoUnlockStatusResponse>("GET", "/desktop/tools/geo-unlock/status");
-  }
-
   // ── Desktop Points API (замена WorkerApiBridge) ──
 
   /**
@@ -1565,8 +1501,7 @@ export interface BillingPackage {
   grants_vault_bonus_days?: number;  // бонус дней при покупке (0 = нет)
   is_vault_standalone?: boolean;     // пакет продаёт ТОЛЬКО хранилище
   vault_days?: number;               // срок standalone-предложения (дни)
-  // GEO_Unlock — standalone количество разблокировок утилит, независимое от хранилища (vault_days).
-  // 0 = пакет утилиту не открывает.
+  // Бонус утилит пакета (количество разблокировок, независимо от хранилища); 0 = нет бонуса.
   geo_unlock_count?: number;
 }
 

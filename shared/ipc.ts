@@ -61,10 +61,4 @@ export const MAIN_SIDE_COMMANDS = new Set<string>([
   "window.showSaveDialog",
   "window.showMessageBox",
   "open_url",
-  // GEO_Unlock (вкладка «Інструменти»): ядра живут в main-процессе (TypeScript),
-  // sidecar для них не нужен — см. electron/geo-unlock/.
-  "geo_samsung_scan",
-  "geo_samsung_patch",
-  "geo_lg_scan",
-  "geo_lg_patch",
 ]);

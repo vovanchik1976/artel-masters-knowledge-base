@@ -41,7 +41,6 @@ import { CommunityPage } from "./CommunityPage";
 import { FaqPage } from "./FaqPage";
 import { OwnerPage } from "./OwnerPage";
 import { ArchivePage } from "./ArchivePage";
-import { ToolsPage } from "./ToolsPage";
 import { setTdlibUserAuthorized } from "../tdlibAuth";
 import { setAppAuthenticated, getCurrentTgId } from "../auth";
 import { t, tLoose, subscribe, applyStaticI18n } from "../i18n";
@@ -78,7 +77,6 @@ export class App {
   private activityHeartbeat = new ActivityHeartbeat(() => api.communityHeartbeat());
   private ownerPage!: OwnerPage;
   private archivePage!: ArchivePage;
-  private toolsPage!: ToolsPage;
 
   // DOM рефы
   private mainSection!: HTMLElement;
@@ -253,13 +251,6 @@ export class App {
       (archiveContainer as HTMLElement) ?? document.createElement("div"),
     );
 
-    // Інструменти (GEO Unlock, D-148/D-150): локальні правки дампів Samsung/LG.
-    // Розмітка статична в index.html (data-i18n), тут — лише поведінка; якщо
-    // контейнера немає — оффскрін-елемент, щоб не роняти конструктор.
-    const toolsContainer = document.getElementById("toolsContainer");
-    this.toolsPage = new ToolsPage(
-      (toolsContainer as HTMLElement) ?? document.createElement("div"),
-    );
 
 
     // Применить сохранённую тему оформления (класс data-theme на <html>).
@@ -525,13 +516,6 @@ export class App {
       // повторные клики — no-op (FaqPage кэширует по языку).
       void this.faqPage.ensureLoaded();
     }
-    if (tabName === "tools") {
-      // Остаток разблокировок GEO_Unlock мог измениться, пока вкладка была
-      // закрыта (патч по платному дампу, покупка пакета, правка админом) —
-      // обновляем счётчик при каждом открытии. Это ЧТЕНИЕ: grant не выдаётся
-      // и разблокировка не списывается (D-173).
-      void this.toolsPage.refreshStatus();
-    }
     if (tabName === "search") {
       // BUG-CABINET-STALE-001: список личного кабинета живёт в DOM до
       // следующего действия пользователя, поэтому после личной загрузки
@@ -794,8 +778,6 @@ export class App {
     this.downloadPage.bindEvents();
     this.searchPage.bindEvents();
     this.archivePage.bindEvents();
-    // Інструменти (GEO Unlock): кнопки/поля вкладки «Інструменти».
-    this.toolsPage.bindEvents();
 
     // Owner-backdoor: при каждом открытии вкладки — свежая загрузка списка.
     this.ownerTabBtn.addEventListener("click", () => {
@@ -934,8 +916,6 @@ export class App {
     this.ownerPage.applyLang();
     // Archiver (Фаза 3): подписи кнопок/селекта — только textContent.
     this.archivePage.applyLang();
-    // Інструменти (GEO Unlock): шляхи/бейдж тарифу — динамічні, решта через data-i18n.
-    this.toolsPage.applyLang();
   }
 
   /** Перерисовать блок баллов/статуса в header из сохранённого состояния. */

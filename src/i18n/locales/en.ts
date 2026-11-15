@@ -643,9 +643,6 @@ export const en: UkDict = {
     load_error: "❌ Failed to load packages: {err}",
     retry: "🔄 Try again",
     no_packages: "ℹ️ No packages available for purchase",
-    /** GEO_Unlock — standalone unlock count of the tool (independent of storage). No long note (D-159). */
-    geo_unlock_title: "GEO_Unlock tool",
-    geo_unlock_bonus: "{days} unlocks of the GEO_Unlock tool",
     popular: "🔥 Popular",
     sum: "Amount",
     points_label: "Points",
@@ -863,88 +860,6 @@ export const en: UkDict = {
     kind_service_manual: "Service Manual",
     kind_bulletin: "Bulletin",
     kind_other: "Other",
-  },
-  /**
-   * "Tools" — GEO Unlock: local NVM/eMMC dump patching.
-   *
-   * The dump CONTENT decides the tier (main process): an NVM 24C512 chip
-   * (exactly 64 KiB) is free; a 2 MiB eMMC dump (Tizen-10 / 2026+ sets) needs a
-   * server grant — a store package (D-151), a trial run, or the owner without a
-   * charge.
-   *
-   * Two Samsung methods are shown SEPARATELY by generation (D-154): older models —
-   * the chip, newer ones — the eMMC dump. Hints stay free of internal structure
-   * names ("pool", "journal"): the technician reads a dump and patches it.
-   */
-  tools: {
-    subtitle: "Samsung and LG region change — local only, files never leave the PC.",
-    /* Shared by both methods — split out of the common help text (D-153). */
-    rules_one_tv: "One TV — its own file: it holds the serial number, MAC address and keys.",
-    rules_keep_dump:
-      "The source file is NEVER modified — the patch always goes to a new file. Keep the dump you read: that is your rollback.",
-    samsung_title: "Samsung eeprom — region code",
-    /* D-167: the card wording matches how grants really work (trial runs,
-       default 3, then store-package subscription). */
-    accepts:
-      "The dump type is detected automatically: NVM 24C512 chip (exactly 64 KiB, 2016–2025 sets, Tizen 2.4–9.0) — free; a 2 MiB eMMC dump (Tizen-10, 2026 sets) — 3 free patches, then by subscription via store packages.",
-    /* The free path stands next to the paid unlock counter: the owner asked that
-       a technician can see NVM Tizen up to 2026 needs no package. */
-    free_nvm_note:
-      "NVM chip (Tizen up to 2026) — free: no package needed, no limits.",
-    /* Paid unlock counter (D-173): the number comes from the SERVER
-       (`GET /desktop/tools/geo-unlock/status`); the renderer never recomputes it. */
-    unlocks_loading: "⏳ Checking the unlock balance…",
-    unlocks_left: "TIZEN 2026+ unlocks left: {n}",
-    unlocks_unlimited: "TIZEN 2026+ unlocks: unlimited",
-    unlocks_owner: "TIZEN 2026+ unlocks: owner, unlimited",
-    unlocks_trial: "TIZEN 2026+ trial unlocks: {left} of {limit}",
-    unlocks_none: "No TIZEN 2026+ unlocks left — a store package is required",
-    /* Two Samsung methods by generation (D-154): older models — the 24C512 chip,
-       newer ones — a 2 MiB eMMC dump. Texts deliberately avoid internal technical
-       structure names: the technician reads a dump and patches it. */
-    samsung_old_title: "Older sets 2016–2025 (Tizen 2.4–9.0) — NVM 24C512 chip (64 KiB)",
-    samsung_old_howto:
-      "Read the chip with a programmer (SOIC-8 clip) — the file must be exactly 64 KiB → “Check without writing” → “Patch and save…” → write it back into the chip. Region byte 0x3E65 = 02 is patched, and the checksum is recomputed if the dump has one. Free.",
-    samsung_new_title: "Newer models (Tizen-10, 2026+ sets) — 2 MiB eMMC dump",
-    samsung_source:
-      "What to dump: 2 MiB from eMMC = 0x200000. Order: dump 2 MiB at the required offset → patch → write it back at the same offset. Reference by chip size: 8 GB — 0x1D1328000, 16 GB — 0x3A3010000 - sections named NONE.",
-    samsung_howto:
-      "“Check without writing” shows what was found → “Patch and save…”. The region byte is patched in EVERY copy, checksums are recomputed. 3 free patches, then by subscription via store packages.",
-    pick_dump: "Choose dump…",
-    dump_label: "Dump:",
-    not_selected: "not selected",
-    region_label: "Region code (hex):",
-    check: "Check without writing",
-    patch: "Patch and save…",
-    save_title: "Save patched dump",
-    tier_free: "Free: NVM 24C512 chip (exactly 64 KiB).",
-    tier_paid: "Paid: 2 MiB eMMC dump — store package only.",
-    need_grant: "2 MiB eMMC dump: the patch needs a server grant.",
-    warn_flat_only:
-      "This dump has no working region copy — nothing will change on the set. A 2 MiB eMMC dump (Tizen-10, 2026+ sets) is required and works with a store package only.",
-    grant_owner: "Owner: no points charged.",
-    grant_package: "Package: {left} unlocks left. No points charged.",
-    grant_package_unlimited: "Package without a limit: no points charged.",
-    grant_trial: "Trial run: no charge ({left} of {limit} left).",
-    grant_failed: "Could not obtain a grant: {reason}",
-    grant_no_package: "an active package is required — trial runs are used up",
-    scan_failed: "Dump not recognised: {reason}",
-    copies_found: "Copies found: {n}.",
-    done: "Done: {path}",
-    patch_failed: "Patch failed: {reason}",
-    pick_failed: "Could not open the file dialog: {reason}",
-    lg_title: "LG NVM (Area Option)",
-    /* Short LG method guide (D-153): what to dump and in which order. */
-    lg_source:
-      "What to dump: EEPROM 24C256 — 32 KiB. Area Option is a packed value. The address differs between generations — the tool finds it automatically.",
-    lg_howto:
-      "Order: dump 32 KiB → “Check the dump” → enter the new value → “Apply…” → write it back. Regions: 3122 = EU (Poland), 3640/3642 = CIS (Russia, Belarus, Ukraine).",
-    lg_scan: "Check the dump",
-    lg_value_label: "New Area Option value:",
-    lg_value_hint: "3640 or 0x0E38",
-    lg_apply: "Apply…",
-    lg_candidates: "Candidates found: {n}.",
-    lg_none: "No LG NVM found in this file.",
   },
   card_edit: {
     btn: "✏️ Edit card fields",

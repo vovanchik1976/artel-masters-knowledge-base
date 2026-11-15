@@ -130,25 +130,6 @@ export class BillingPage {
     return "";
   }
 
-  /**
-   * Бонус утилиты GEO_Unlock (пусто — бонуса нет).
-   *
-   * Количество разблокировок утилиты берётся из серверного `geo_unlock_count` —
-   * standalone цифра, независимая от срока личного хранилища (vault_days).
-   * Клиент НЕ пересчитывает, иначе карточка и выдача разойдутся.
-   *
-   * Пояснения-«простыни» на карточке НЕТ (D-159, решение владельца): строка
-   * называет количество разблокировок, остальное мастер читает во вкладке
-   * «Інструменти».
-   */
-  private _toolBonus(pkg: BillingPackage): string {
-    const count = pkg.geo_unlock_count ?? 0;
-    if (count > 0) {
-      return `🔧 ${tLoose("billing.geo_unlock_bonus", { days: count })}`;
-    }
-    return "";
-  }
-
   /** Рендер карточек пакетов */
   private render(): void {
     if (this.packages.length === 0) {
@@ -175,9 +156,6 @@ export class BillingPage {
       const vaultNoteLine = vaultNote
         ? `<div class="billing-card-vault-note">${vaultNote}</div>`
         : "";
-      // GEO_Unlock — второй бонус пакета (D-158), тот же срок, что и у хранилища.
-      const toolLabel = this._toolBonus(pkg);
-      const toolLine = toolLabel ? `<div class="billing-card-tool">${toolLabel}</div>` : "";
       const pointsLine = vault.standalone
         ? `<div class="billing-card-points">🗄️ ${pkg.vault_days ?? 0} ${tLoose("vault.days_short")}</div>`
         : `<div class="billing-card-points">${t("header.balance", { n: pkg.points })}</div>`;
@@ -189,7 +167,6 @@ export class BillingPage {
           <div class="billing-card-desc">${this._pkgDesc(pkg)}</div>
           ${vaultLine}
           ${vaultNoteLine}
-          ${toolLine}
           <div class="billing-card-price">${pkg.price_uah} ₴</div>
           ${pointsLine}
         </div>
@@ -255,22 +232,11 @@ export class BillingPage {
       ? `<p style="font-size:12px; color:var(--text-dim); line-height:1.45; background:var(--surface2); border-radius:6px; padding:8px 10px; margin:0 0 12px;">${vaultNote}</p>`
       : "";
 
-    // Утилиты (GEO_Unlock и др.) — standalone срок, независимый от хранилища.
-    // Пока пакет действует, платная правка дампа баллов не списывает (D-151).
-    const toolLabel = this._toolBonus(pkg);
-    const toolModalLine = toolLabel
-      ? `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
-          <span style="font-size:14px;">🔧 ${tLoose("billing.geo_unlock_title")}</span>
-          <span style="font-size:14px; font-weight:600; color:var(--accent);">${toolLabel}</span>
-        </div>`
-      : "";
-
     body.innerHTML = `
       <h3 style="margin-bottom:12px;">${this._pkgName(pkg)}</h3>
       <p style="font-size:13px; color:var(--text-dim); margin-bottom:16px;">${this._pkgDesc(pkg)}</p>
       ${vaultModalLine}
       ${vaultNoteLine}
-      ${toolModalLine}
       <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
         <span style="font-size:14px;">${t("billing.sum")}</span>
         <span style="font-size:16px; font-weight:700; color:var(--accent);">${pkg.price_uah} ₴</span>

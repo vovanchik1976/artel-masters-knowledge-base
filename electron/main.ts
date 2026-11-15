@@ -22,12 +22,6 @@ import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { SidecarManager, NO_TIMEOUT_MS } from "./sidecar-manager";
-import {
-  geoPatchLg,
-  geoPatchSamsung,
-  geoScanLg,
-  geoScanSamsung,
-} from "./geo-unlock/service";
 import { rotateLogFile, pruneOldLogs, CLIENT_LOG_NAME_RE } from "./log-rotation";
 import {
   checkForUpdate,
@@ -460,20 +454,6 @@ async function bridgeHandle(cmd: string, args: Record<string, unknown>): Promise
         // (путь, exists/размер, код выхода, где лежат логи) вместо голой строки.
         return ok(sidecarDiagnostics());
       }
-
-      // ── GEO_Unlock (вкладка «Інструменти»): headless-ядра в main ───────
-      // Тариф решает СОДЕРЖИМОЕ дампа (см. electron/geo-unlock/service.ts):
-      // grant нужен только для дампа раздела eMMC, причём владельцу сервер
-      // выдаёт grant kind "owner" без списания. Дамп микросхемы NVM 24C512
-      // (64 КиБ) и все сканы бесплатны.
-      case "geo_samsung_scan":
-        return ok(geoScanSamsung(args));
-      case "geo_samsung_patch":
-        return ok(geoPatchSamsung(args));
-      case "geo_lg_scan":
-        return ok(geoScanLg(args));
-      case "geo_lg_patch":
-        return ok(geoPatchLg(args));
 
       // ── download-RCA в файл (Linux-dev, e2e-prod32) ───────────────────
       // Зеркало лога вкладки «Передача» (стратегия/priority/ошибка дословно) —
